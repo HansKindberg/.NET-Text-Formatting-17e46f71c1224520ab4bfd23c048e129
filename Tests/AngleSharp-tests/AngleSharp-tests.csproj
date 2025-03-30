@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<RootNamespace>AngleSharpTests</RootNamespace>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="AngleSharp" Version="1.2.0" />
+	</ItemGroup>
+</Project>

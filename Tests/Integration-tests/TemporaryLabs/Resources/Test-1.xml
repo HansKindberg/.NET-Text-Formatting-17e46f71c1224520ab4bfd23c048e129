@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<root xmlns:a="http://localhost">
+	<element link="/a/b/c/Index.html?New=true&amp;DataReference={0}" c="c" a="a" b="b" a:a="a:a" />
+	<a:element c="c" a="a" b="b" a:a="a:a" />
+</root>

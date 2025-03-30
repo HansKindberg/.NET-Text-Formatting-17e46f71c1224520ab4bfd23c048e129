@@ -1,0 +1,3 @@
+<root xmlns:a="http://localhost/a" xmlns:b="http://localhost/b" xmlns:c="http://localhost/c">
+	<element x="&amp;" c:a="c:a" b:a="b:a" a:a="a:a" c="c" b="b" a="a" pinned="pinned" />
+</root>

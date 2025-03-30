@@ -1,0 +1,23 @@
+[*.cs]
+# Suppress
+#dotnet_diagnostic.CA1416.severity = none
+#dotnet_diagnostic.IDE0057.severity = none
+#dotnet_diagnostic.IDE0078.severity = none
+#dotnet_diagnostic.IDE0083.severity = none
+#dotnet_diagnostic.IDE0090.severity = none
+
+
+
+
+
+
+
+# TEMP
+dotnet_diagnostic.IDE0130.severity = none
+dotnet_diagnostic.CA1040.severity = none
+
+
+
+[/Logging/Extensions/LoggerExtension.cs]
+dotnet_diagnostic.CA1848.severity = none
+dotnet_diagnostic.CA2254.severity = none

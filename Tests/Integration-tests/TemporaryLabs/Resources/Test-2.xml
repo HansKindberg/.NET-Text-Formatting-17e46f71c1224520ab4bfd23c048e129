@@ -1,0 +1,8 @@
+<a xmlns:a="http://localhost" />
+<b xmlns:a="http://localhost" />
+<c xmlns:a="http://localhost" />
+<d xmlns:a="http://localhost">
+	<element link="/a/b/c/Index.html?New=true&amp;DataReference={0}" c="c" a="a" b="b" a:a="a:a" />
+	<a:element c="c" a="a" b="b" a:a="a:a" />
+</d>
+<e a:a="yeah" />

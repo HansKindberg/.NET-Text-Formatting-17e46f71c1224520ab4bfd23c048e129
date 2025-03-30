@@ -1,0 +1,46 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<AssemblyName>HansKindberg.Text.Formatting</AssemblyName>
+		<AssemblyOriginatorKeyFile>$(SolutionDir)StrongName.snk</AssemblyOriginatorKeyFile>
+		<Authors>Hans Kindberg - open source</Authors>
+		<Company>$(Authors)</Company>
+		<Description>Library for text-formatting. Eg. json-formatting, xml-formatting etc.</Description>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageProjectUrl>https://github.com/HansKindberg/.NET-Text-Formatting/</PackageProjectUrl>
+		<PackageReleaseNotes>https://github.com/HansKindberg/.NET-Text-Formatting/releases/</PackageReleaseNotes>
+		<PackageTags></PackageTags>
+		<RootNamespace>$(AssemblyName)</RootNamespace>
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<VersionPrefix>0.0.0</VersionPrefix>
+		<VersionSuffix>alpha</VersionSuffix>
+	</PropertyGroup>
+	<ItemGroup>
+		<!-- https://stackoverflow.com/questions/59927051/mark-an-assembly-clscompliant-in-csproj#answer-70905904 -->
+		<AssemblyAttribute Include="System.CLSCompliantAttribute">
+			<_Parameter1>true</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+	<ItemGroup>
+		<InternalsVisibleTo Include="Integration-tests, PublicKey=00240000048000009400000006020000002400005253413100040000010001009d1016571e63e70ba6bdedf4cc5bb13ac3776f9b319d05aba58eca8dbb082124a0b169ed593a445e5b98cc1c37b9015ebc4846051347575d1ea086f91f27e14f46a0a9acaa80244ff1091358d3db024af3079e168725eeaade7eb60363e98df661c13bcbcf32cab1efccf76918a8addd89708ce2718f6826f696592315280bdd" />
+		<InternalsVisibleTo Include="Unit-tests, PublicKey=00240000048000009400000006020000002400005253413100040000010001009d1016571e63e70ba6bdedf4cc5bb13ac3776f9b319d05aba58eca8dbb082124a0b169ed593a445e5b98cc1c37b9015ebc4846051347575d1ea086f91f27e14f46a0a9acaa80244ff1091358d3db024af3079e168725eeaade7eb60363e98df661c13bcbcf32cab1efccf76918a8addd89708ce2718f6826f696592315280bdd" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="HtmlAgilityPack" Version="1.12.0" />
+		<!--
+			<PackageReference Include="JsonPath.Net" Version="2.1.1" />
+		-->
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.3" />
+		<PackageReference Include="System.Text.Json" Version="9.0.3" />
+		<PackageReference Include="YamlDotNet" Version="16.3.0" />
+	</ItemGroup>
+	<Target Name="HandleAssemblyOriginatorKeyFile" BeforeTargets="BeforeBuild" Condition="$(SignAssembly) AND !Exists('$(AssemblyOriginatorKeyFile)')">
+		<PropertyGroup>
+			<_DevelopmentAssemblyOriginatorKeyFile>$(SolutionDir)StrongName.Development.snk</_DevelopmentAssemblyOriginatorKeyFile>
+		</PropertyGroup>
+		<Warning Text="The strong-name-key-file '$(AssemblyOriginatorKeyFile)' does not exist. The strong-name-key-file '$(_DevelopmentAssemblyOriginatorKeyFile)' is used instead." />
+		<PropertyGroup>
+			<AssemblyOriginatorKeyFile>$(_DevelopmentAssemblyOriginatorKeyFile)</AssemblyOriginatorKeyFile>
+		</PropertyGroup>
+	</Target>
+</Project>

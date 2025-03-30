@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<root level="0" xmlns:a="http://localhost">
+	<element level="1">
+		<element level="2">
+			<element level="3">
+				<element a:id="a:id-value&amp;" id="id-value" level="4" />
+			</element>
+		</element>
+	</element>
+</root>
