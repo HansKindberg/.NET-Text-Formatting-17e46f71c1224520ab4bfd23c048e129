@@ -20,7 +20,6 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: |
-          # 3.1.x
           5.0.x
           6.0.x
           7.0.x
@@ -30,8 +29,6 @@ jobs:
       run: dotnet restore
     - name: Build
       run: dotnet build --configuration Release --no-restore
-    # - name: Test - netcoreapp3.1
-    #   run: dotnet test --configuration Release --framework netcoreapp3.1 --no-build --verbosity normal
     - name: Test - net5.0
       run: dotnet test --configuration Release --framework net5.0 --no-build --verbosity normal
     - name: Test - net6.0
