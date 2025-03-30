@@ -1,4 +1,5 @@
 using HansKindberg.Text.Formatting.Yaml;
+using Shared.Extensions;
 
 namespace UnitTests.Yaml
 {
@@ -24,9 +25,11 @@ namespace UnitTests.Yaml
 		[Theory]
 		[InlineData(" ")]
 		[InlineData("     ")]
-		[InlineData("         \r\n         \n          \t    ")]
+		[InlineData("         \n         \n          \t    ")]
 		public async Task Parse_IfTheValueParameterIsOnlyWhiteSpaces_ShouldReturnAnEmptyYamlDocument(string value)
 		{
+			value = value.ResolveNewLine();
+
 			var yamlDocument = await new YamlParser().Parse(value);
 			Assert.NotNull(yamlDocument);
 		}
@@ -35,6 +38,8 @@ namespace UnitTests.Yaml
 		[InlineData("firstProperty: \"First value\"")]
 		public async Task Parse_ShouldWorkProperly(string value)
 		{
+			value = value.ResolveNewLine();
+
 			var yamlDocument = await new YamlParser().Parse(value);
 			Assert.NotNull(yamlDocument);
 		}

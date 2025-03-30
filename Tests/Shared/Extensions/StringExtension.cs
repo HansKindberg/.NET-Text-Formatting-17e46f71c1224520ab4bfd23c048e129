@@ -4,6 +4,9 @@ namespace Shared.Extensions
 	{
 		#region Methods
 
+		/// <summary>
+		/// New lines are different on different platforms. E.g. "\n" on Linux and "\r\n" on Windows. This method resolves it.
+		/// </summary>
 		public static string ResolveNewLine(this string value)
 		{
 			if(value == null)

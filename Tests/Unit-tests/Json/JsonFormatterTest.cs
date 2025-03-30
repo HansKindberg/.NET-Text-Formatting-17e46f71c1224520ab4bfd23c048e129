@@ -32,10 +32,10 @@ namespace UnitTests.Json
 		}
 
 		[Theory]
-		[InlineData("{\"a\":\"b\",\"c\":{\"d\":\"e\",\"f\":\"g\"},\"h\":[{\"i\":\"j\"},{\"k\":\"l\"}]}", "{\r\n\t\"a\": \"b\",\r\n\t\"c\": {\r\n\t\t\"d\": \"e\",\r\n\t\t\"f\": \"g\"\r\n\t},\r\n\t\"h\": [\r\n\t\t{\r\n\t\t\t\"i\": \"j\"\r\n\t\t},\r\n\t\t{\r\n\t\t\t\"k\": \"l\"\r\n\t\t}\r\n\t]\r\n}", '\t', true, 1, true, ListSortDirection.Ascending)]
-		[InlineData("{\"a\":\"b\",\"c\":{\"d\":\"e\",\"f\":\"g\"},\"h\":[{\"i\":\"j\"},{\"k\":\"l\"}]}", "{\r\n\t\t\t\t\"a\": \"b\",\r\n\t\t\t\t\"c\": {\r\n\t\t\t\t\t\t\t\t\"d\": \"e\",\r\n\t\t\t\t\t\t\t\t\"f\": \"g\"\r\n\t\t\t\t},\r\n\t\t\t\t\"h\": [\r\n\t\t\t\t\t\t\t\t{\r\n\t\t\t\t\t\t\t\t\t\t\t\t\"i\": \"j\"\r\n\t\t\t\t\t\t\t\t},\r\n\t\t\t\t\t\t\t\t{\r\n\t\t\t\t\t\t\t\t\t\t\t\t\"k\": \"l\"\r\n\t\t\t\t\t\t\t\t}\r\n\t\t\t\t]\r\n}", '\t', true, 4, true, ListSortDirection.Ascending)]
+		[InlineData("{\"a\":\"b\",\"c\":{\"d\":\"e\",\"f\":\"g\"},\"h\":[{\"i\":\"j\"},{\"k\":\"l\"}]}", "{\n\t\"a\": \"b\",\n\t\"c\": {\n\t\t\"d\": \"e\",\n\t\t\"f\": \"g\"\n\t},\n\t\"h\": [\n\t\t{\n\t\t\t\"i\": \"j\"\n\t\t},\n\t\t{\n\t\t\t\"k\": \"l\"\n\t\t}\n\t]\n}", '\t', true, 1, true, ListSortDirection.Ascending)]
+		[InlineData("{\"a\":\"b\",\"c\":{\"d\":\"e\",\"f\":\"g\"},\"h\":[{\"i\":\"j\"},{\"k\":\"l\"}]}", "{\n\t\t\t\t\"a\": \"b\",\n\t\t\t\t\"c\": {\n\t\t\t\t\t\t\t\t\"d\": \"e\",\n\t\t\t\t\t\t\t\t\"f\": \"g\"\n\t\t\t\t},\n\t\t\t\t\"h\": [\n\t\t\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\t\t\t\t\t\"i\": \"j\"\n\t\t\t\t\t\t\t\t},\n\t\t\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\t\t\t\t\t\"k\": \"l\"\n\t\t\t\t\t\t\t\t}\n\t\t\t\t]\n}", '\t', true, 4, true, ListSortDirection.Ascending)]
 
-		//[InlineData("{ \"a\": \"b\", \"c\": { \"d\": \"e\", \"f\": \"g\" }, \"h\": [ { \"i\": \"j\" }, { \"k\": \"l\" } ] }", "{\r\n\t\t\t\t\"a\": \"b\",\r\n\t\t\t\t\"c\": {\r\n\t\t\t\t\t\t\t\t\"d\": \"e\",\r\n\t\t\t\t\t\t\t\t\"f\": \"g\"\r\n\t\t\t\t},\r\n\t\t\t\t\"h\": [\r\n\t\t\t\t\t\t\t\t{\r\n\t\t\t\t\t\t\t\t\t\t\t\t\"i\": \"j\"\r\n\t\t\t\t\t\t\t\t},\r\n\t\t\t\t\t\t\t\t{\r\n\t\t\t\t\t\t\t\t\t\t\t\t\"k\": \"l\"\r\n\t\t\t\t\t\t\t\t}\r\n\t\t\t\t]\r\n}")]
+		//[InlineData("{ \"a\": \"b\", \"c\": { \"d\": \"e\", \"f\": \"g\" }, \"h\": [ { \"i\": \"j\" }, { \"k\": \"l\" } ] }", "{\n\t\t\t\t\"a\": \"b\",\n\t\t\t\t\"c\": {\n\t\t\t\t\t\t\t\t\"d\": \"e\",\n\t\t\t\t\t\t\t\t\"f\": \"g\"\n\t\t\t\t},\n\t\t\t\t\"h\": [\n\t\t\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\t\t\t\t\t\"i\": \"j\"\n\t\t\t\t\t\t\t\t},\n\t\t\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\t\t\t\t\t\"k\": \"l\"\n\t\t\t\t\t\t\t\t}\n\t\t\t\t]\n}")]
 		public async Task Format_ShouldWorkProperly(string text, string expected, char indentationCharacter, bool indentationEnabled, byte indentationSize, bool sortingEnabled, ListSortDirection sortingDirection)
 		{
 			text = text.ResolveNewLine();

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Xml;
 using HansKindberg.Text.Formatting.Xml;
+using Shared.Extensions;
 
 namespace UnitTests.Xml
 {
@@ -53,12 +54,11 @@ namespace UnitTests.Xml
 		[Theory]
 		[InlineData("     ", 1)]
 		[InlineData("     \n     \n     ", 1)]
-		[InlineData("     \r\n     \r\n     ", 1)]
-		[InlineData("     \n     \r\n     \n     \r\n     ", 1)]
+		[InlineData("     \n     \n     \n     \n     ", 1)]
 		[InlineData("     <root />     ", 3)]
-		[InlineData("     \n     \r\n     <root />     \n     \r\n     ", 3)]
-		[InlineData("     \n     \r\n     <root />     \n     \r\n     <root />     \n     \r\n     <root />     \n     \r\n     ", 7)]
-		[InlineData("     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     \r\n     <root />     \n     \r\n     <root />     \n     \r\n     <root />     \n     \r\n     ", 9)]
+		[InlineData("     \n     \n     <root />     \n     \n     ", 3)]
+		[InlineData("     \n     \n     <root />     \n     \n     <root />     \n     \n     <root />     \n     \n     ", 7)]
+		[InlineData("     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     \n     <root />     \n     \n     <root />     \n     \n     <root />     \n     \n     ", 9)]
 		[InlineData("<root />", 1)]
 		[InlineData("<p>", 1)]
 		[InlineData("<div>", 1)]
@@ -66,7 +66,7 @@ namespace UnitTests.Xml
 		[InlineData("<div><p>", 1)]
 		[InlineData("<p>Text</p><div>Content</div><p></p><div></div><p /><div /><p/><div/><p><div>", 10)]
 		[InlineData("<?xml version=\"1.0\" encoding=\"utf-8\"?><p>Text</p><div>Content</div><p></p><div></div><p /><div /><p/><div/><p><div>", 11)]
-		[InlineData("  \r\n  <?xml version=\"1.0\" encoding=\"utf-8\"?><p>Text</p><div>Content</div><p></p><div></div><p /><div /><p/><div/><p><div>  ", 12)]
+		[InlineData("  \n  <?xml version=\"1.0\" encoding=\"utf-8\"?><p>Text</p><div>Content</div><p></p><div></div><p /><div /><p/><div/><p><div>  ", 12)]
 		[InlineData("<a:b>", 1)]
 		[InlineData("<a:b />", 1)]
 		[InlineData("<a:b></a:b>", 1)]
@@ -78,6 +78,8 @@ namespace UnitTests.Xml
 		[InlineData("<a:b c:d=\"e\"></a:b>", 1)]
 		public async Task Parse_ShouldWorkProperly(string value, int expectedNumberOfNodes)
 		{
+			value = value.ResolveNewLine();
+
 			var xmlFragment = await new XmlParser().Parse(value);
 			Assert.NotNull(xmlFragment);
 			Assert.Equal(expectedNumberOfNodes, xmlFragment.Nodes.Count);
@@ -85,10 +87,10 @@ namespace UnitTests.Xml
 
 		[Theory]
 		[InlineData("     ", "     ")]
-		[InlineData("     \n     \r\n     \n     \r\n     ", "     \n     \r\n     \n     \r\n     ")]
-		[InlineData("     \n     \r\n     <root/>     \n     \r\n     <root />     \n     \r\n     <root   />     \n     \r\n     ", "     \n     \r\n     <root></root>     \n     \r\n     <root></root>     \n     \r\n     <root></root>     \n     \r\n     ")]
-		[InlineData("     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     \r\n     <root />     \n     \r\n     <root />     \n     \r\n     <root />     \n     \r\n     ", "     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     \r\n     <root></root>     \n     \r\n     <root></root>     \n     \r\n     <root></root>     \n     \r\n     ")]
-		[InlineData("     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     \r\n     <root>     \n     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \r\n     <root />     \n     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \r\n     <root     />     \n     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \r\n     ", "     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     \r\n     <root>     \n     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \r\n     <root></root>     \n     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \r\n     <root></root>     \n     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \r\n     </root>")]
+		[InlineData("     \n     \n     \n     \n     ", "     \n     \n     \n     \n     ")]
+		[InlineData("     \n     \n     <root/>     \n     \n     <root />     \n     \n     <root   />     \n     \n     ", "     \n     \n     <root></root>     \n     \n     <root></root>     \n     \n     <root></root>     \n     \n     ")]
+		[InlineData("     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     \n     <root />     \n     \n     <root />     \n     \n     <root />     \n     \n     ", "     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     \n     <root></root>     \n     \n     <root></root>     \n     \n     <root></root>     \n     \n     ")]
+		[InlineData("     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     \n     <root>     \n     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     <root />     \n     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     <root     />     \n     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     ", "     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     \n     <root>     \n     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     <root></root>     \n     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     <root></root>     \n     <?xml version=\"1.0\" encoding=\"utf-8\"?>     \n     </root>")]
 		[InlineData("<root />", "<root></root>")]
 		[InlineData("<p>", "<p></p>")]
 		[InlineData("<div>", "<div></div>")]
@@ -96,11 +98,14 @@ namespace UnitTests.Xml
 		[InlineData("<div><p>", "<div><p></p></div>")]
 		[InlineData("<p>Text</p><div>Content</div><p></p><div></div><p /><div /><p/><div/><p><div>", "<p>Text</p><div>Content</div><p></p><div></div><p></p><div></div><p></p><div></div><p></p><div></div>")]
 		[InlineData("<?xml version=\"1.0\" encoding=\"utf-8\"?><p>Text</p><div>Content</div><p></p><div></div><p /><div /><p/><div/><p><div>", "<?xml version=\"1.0\" encoding=\"utf-8\"?><p>Text</p><div>Content</div><p></p><div></div><p></p><div></div><p></p><div></div><p></p><div></div>")]
-		[InlineData("  \r\n  <?xml version=\"1.0\" encoding=\"utf-8\"?><p>Text</p><div>Content</div><p></p><div></div><p /><div /><p/><div/><p><div>  ", "  \r\n  <?xml version=\"1.0\" encoding=\"utf-8\"?><p>Text</p><div>Content</div><p></p><div></div><p></p><div></div><p></p><div></div><p></p><div>  </div>")]
+		[InlineData("  \n  <?xml version=\"1.0\" encoding=\"utf-8\"?><p>Text</p><div>Content</div><p></p><div></div><p /><div /><p/><div/><p><div>  ", "  \n  <?xml version=\"1.0\" encoding=\"utf-8\"?><p>Text</p><div>Content</div><p></p><div></div><p></p><div></div><p></p><div></div><p></p><div>  </div>")]
 		[InlineData("<a:b>", "<a:b></a:b>")]
 		[InlineData("<div a:b=\"c\" />", "<div a:b=\"c\"></div>")]
 		public async Task Repair_ShouldWorkProperly(string value, string expectedRepairedValue)
 		{
+			value = value.ResolveNewLine();
+			expectedRepairedValue = expectedRepairedValue.ResolveNewLine();
+
 			var repairedValue = await new XmlParser().Repair(value);
 			Assert.Equal(expectedRepairedValue, repairedValue);
 		}
