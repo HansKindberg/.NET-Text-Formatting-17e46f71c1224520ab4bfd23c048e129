@@ -40,7 +40,26 @@ namespace IntegrationTests.Yaml
 		}
 
 		[Theory]
-		[InlineData("Yaml-1.yml")]
+		[InlineData("Yaml-01.yml")]
+		//[InlineData("Yaml-02.yml")]
+		//[InlineData("Yaml-03.yml")]
+		//[InlineData("Yaml-04.yml")]
+		//[InlineData("Yaml-05.yml")]
+		//[InlineData("Yaml-06.yml")]
+		//[InlineData("Yaml-07.yml")]
+		//[InlineData("Yaml-08.yml")]
+		//[InlineData("Yaml-09.yml")]
+		//[InlineData("Yaml-10.yml")]
+		//[InlineData("Yaml-11.yml")]
+		//[InlineData("Yaml-12.yml")]
+		//[InlineData("Yaml-13.yml")]
+		//[InlineData("Yaml-14.yml")]
+		//[InlineData("Yaml-15.yml")]
+		//[InlineData("Yaml-16.yml")]
+		//[InlineData("Yaml-17.yml")]
+		//[InlineData("Yaml-18.yml")]
+		//[InlineData("Yaml-19.yml")]
+		//[InlineData("Yaml-20.yml")]
 		public async Task Format_ShouldWorkProperly(string fileName)
 		{
 			var text = await GetYaml(fileName);
