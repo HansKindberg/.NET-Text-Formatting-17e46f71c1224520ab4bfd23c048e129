@@ -125,7 +125,7 @@ namespace IntegrationTests.Xml.Comparison
 		{
 			await Task.CompletedTask;
 
-			return File.ReadAllText(Path.Combine(Global.ProjectDirectoryPath, "Xml", "Comparison", "Resources", fileName));
+			return File.ReadAllText(Path.Combine(Global.ProjectDirectory.FullName, "Xml", "Comparison", "Resources", fileName));
 		}
 
 		protected internal virtual async Task<IList<XmlAttributeWrapper>> GetSortedAttributes(IXmlAttributeFormat options)

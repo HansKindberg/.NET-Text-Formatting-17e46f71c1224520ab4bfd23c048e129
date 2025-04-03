@@ -1,16 +1,11 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace IntegrationTests
 {
-	// ReSharper disable All
-	[SuppressMessage("Naming", "CA1716:Identifiers should not match keywords")]
 	public static class Global
 	{
 		#region Fields
 
-		public static readonly string ProjectDirectoryPath = new DirectoryInfo(AppDomain.CurrentDomain.BaseDirectory).Parent!.Parent!.Parent!.FullName;
+		public static readonly DirectoryInfo ProjectDirectory = new DirectoryInfo(Path.Combine(AppDomain.CurrentDomain.BaseDirectory!)).Parent!.Parent!.Parent!;
 
 		#endregion
 	}
-	// ReSharper restore All
 }

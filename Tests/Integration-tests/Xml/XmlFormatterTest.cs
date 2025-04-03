@@ -27,7 +27,7 @@ namespace IntegrationTests.Xml
 		{
 			await Task.CompletedTask;
 
-			return File.ReadAllText(Path.Combine(Global.ProjectDirectoryPath, "Xml", "Resources", fileName));
+			return File.ReadAllText(Path.Combine(Global.ProjectDirectory.FullName, "Xml", "Resources", fileName));
 		}
 
 		#endregion

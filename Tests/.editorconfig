@@ -1,4 +1,5 @@
 [*.cs]
 # Suppress
 dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1716.severity = none
 dotnet_diagnostic.JSON002.severity = none
