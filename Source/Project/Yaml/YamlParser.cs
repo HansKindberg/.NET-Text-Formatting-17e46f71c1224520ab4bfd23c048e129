@@ -3,8 +3,7 @@ using YamlDotNet.RepresentationModel;
 
 namespace HansKindberg.Text.Formatting.Yaml
 {
-	// TODO: Look over this class.
-	public class YamlParser : IParser<YamlDocument>
+	public class YamlParser : IParser<IList<YamlNode>>
 	{
 		#region Fields
 
@@ -22,7 +21,7 @@ namespace HansKindberg.Text.Formatting.Yaml
 			return value.ToStringRepresentation();
 		}
 
-		public virtual async Task<YamlDocument> Parse(string value)
+		public virtual async Task<IList<YamlNode>> Parse(string value)
 		{
 			if(value == null)
 				throw new ArgumentNullException(nameof(value));
@@ -31,16 +30,16 @@ namespace HansKindberg.Text.Formatting.Yaml
 			{
 				await Task.CompletedTask;
 
-				//var yamlStream = new YamlStream();
-				//yamlStream.Load(new StringReader(yaml));
+				var yamlStream = new YamlStream();
 
-				//// Retrieve the first (or only) document in the stream
-				//YamlDocument document = yamlStream.Documents[0];
+				using(var stringReader = new StringReader(value))
+				{
+					yamlStream.Load(stringReader);
+				}
 
-				//// Get the root node of the document (usually a mapping node)
-				//YamlMappingNode rootNode = (YamlMappingNode)document.RootNode;
+				var yamlNodes = yamlStream.Documents.Select(document => document.RootNode).ToList();
 
-				return new YamlDocument(value);
+				return yamlNodes;
 			}
 			catch(Exception exception)
 			{

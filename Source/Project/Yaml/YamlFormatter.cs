@@ -5,11 +5,11 @@ namespace HansKindberg.Text.Formatting.Yaml
 {
 	// TODO: Look over this class.
 	///// <inheritdoc />
-	public class YamlFormatter(IParser<YamlDocument> parser)
+	public class YamlFormatter(IParser<IList<YamlNode>> parser)
 	{
 		#region Properties
 
-		protected internal virtual IParser<YamlDocument> Parser { get; } = parser ?? throw new ArgumentNullException(nameof(parser));
+		protected internal virtual IParser<IList<YamlNode>> Parser { get; } = parser ?? throw new ArgumentNullException(nameof(parser));
 
 		#endregion
 
@@ -23,14 +23,14 @@ namespace HansKindberg.Text.Formatting.Yaml
 			if(text == null)
 				throw new ArgumentNullException(nameof(text));
 
-			var yamlDocument = await this.Parser.Parse(text);
+			var yamlNodes = await this.Parser.Parse(text);
 
 			if(options.Sorting.Enabled)
 			{
 				//yamlDocument = await this.Sort(yamlDocument, options.Sorting);
 			}
 
-			return yamlDocument.ToString();
+			return string.Join(Environment.NewLine, yamlNodes.Select(node => node.ToString()));
 		}
 
 		#endregion
