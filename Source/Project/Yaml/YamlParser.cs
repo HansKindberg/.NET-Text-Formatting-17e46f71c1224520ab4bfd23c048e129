@@ -1,5 +1,7 @@
 using HansKindberg.Text.Formatting.Extensions;
+using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
+using IYamlDotNetParser = YamlDotNet.Core.IParser;
 
 namespace HansKindberg.Text.Formatting.Yaml
 {
@@ -12,6 +14,18 @@ namespace HansKindberg.Text.Formatting.Yaml
 		#endregion
 
 		#region Methods
+
+		protected internal virtual async Task<IScanner> CreateScanner(TextReader textReader)
+		{
+			await Task.CompletedTask;
+
+			return new Scanner(textReader, true); // Comments not supported when deserializing.
+		}
+
+		protected internal virtual async Task<IYamlDotNetParser> CreateYamlDotNetParser(TextReader textReader)
+		{
+			return new Parser(await this.CreateScanner(textReader));
+		}
 
 		protected internal virtual string GetStringRepresentation(string? value)
 		{
@@ -34,7 +48,7 @@ namespace HansKindberg.Text.Formatting.Yaml
 
 				using(var stringReader = new StringReader(value))
 				{
-					yamlStream.Load(stringReader);
+					yamlStream.Load(await this.CreateYamlDotNetParser(stringReader));
 				}
 
 				var yamlNodes = yamlStream.Documents.Select(document => document.RootNode).ToList();
