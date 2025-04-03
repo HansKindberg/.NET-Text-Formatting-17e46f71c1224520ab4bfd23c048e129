@@ -21,6 +21,14 @@ Library for text-formatting. Eg. json-formatting, xml-formatting, yaml-formattin
 
 ### 1.3 YAML
 
+#### 1.3.1 Comments
+
+At the moment deserializing comments is not supported. The comments are removed when deserializing.
+
+- [Serialize comments #152](https://github.com/aaubry/YamlDotNet/issues/152)
+	- Example: https://dotnetfiddle.net/8M6iIE
+- [Process inline comments with DictionaryDeserializer-2 #868](https://github.com/aaubry/YamlDotNet/pull/868)
+
 ## 2 Development
 
 ### 2.1 Signing
