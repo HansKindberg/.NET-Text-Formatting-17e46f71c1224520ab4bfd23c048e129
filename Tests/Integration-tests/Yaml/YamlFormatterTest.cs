@@ -49,7 +49,7 @@ namespace IntegrationTests.Yaml
 		//[InlineData("Yaml-07.yml")]
 		//[InlineData("Yaml-08.yml")]
 		//[InlineData("Yaml-09.yml")]
-		//[InlineData("Yaml-10.yml")]
+		[InlineData("Yaml-10.yml")]
 		//[InlineData("Yaml-11.yml")]
 		//[InlineData("Yaml-12.yml")]
 		//[InlineData("Yaml-13.yml")]

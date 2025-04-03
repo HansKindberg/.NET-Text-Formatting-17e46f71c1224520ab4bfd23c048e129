@@ -11,7 +11,9 @@ namespace HansKindberg.Text.Formatting.Yaml
 	{
 		#region Properties
 
+		protected internal virtual string NewLine => Environment.NewLine;
 		protected internal virtual IParser<IList<YamlNode>> Parser { get; } = parser ?? throw new ArgumentNullException(nameof(parser));
+		protected internal virtual string StartOfDocument => "---";
 
 		#endregion
 
@@ -21,7 +23,7 @@ namespace HansKindberg.Text.Formatting.Yaml
 		{
 			return new SerializerBuilder()
 				.WithNamingConvention(await this.GetNamingConvention(options.NamingConvention))
-				//.WithNewLine(await this.GetNewLine())
+				//.WithNewLine(this.NewLine)
 				.Build();
 		}
 
@@ -37,28 +39,19 @@ namespace HansKindberg.Text.Formatting.Yaml
 
 			var result = string.Empty;
 
-			if(yamlNodes.Count > 0)
+			if(yamlNodes.Count <= 0)
+				return result;
+
+			if(options.Sorting.Enabled)
 			{
-				if(options.Sorting.Enabled)
-				{
-					//yamlDocument = await this.Sort(yamlDocument, options.Sorting);
-				}
-
-				var serializer = await this.CreateSerializer(options);
-
-				var parts = yamlNodes.Select(node => serializer.Serialize(node).Trim()).ToList();
-
-				if(parts.Count == 1)
-				{
-					result = parts[0];
-				}
-				else
-				{
-					var newLine = await this.GetNewLine();
-
-					return string.Join($"...{newLine}", parts);
-				}
+				//yamlDocument = await this.Sort(yamlDocument, options.Sorting);
 			}
+
+			var serializer = await this.CreateSerializer(options);
+
+			var parts = yamlNodes.Select(serializer.Serialize).ToList();
+
+			result = (parts.Count == 1 ? parts[0] : parts.Aggregate(result, (current, part) => current + $"{this.StartOfDocument}{this.NewLine}{part}")).Trim();
 
 			return result;
 		}
@@ -76,13 +69,6 @@ namespace HansKindberg.Text.Formatting.Yaml
 				NamingConvention.Underscored => UnderscoredNamingConvention.Instance,
 				_ => NullNamingConvention.Instance
 			};
-		}
-
-		protected internal virtual async Task<string> GetNewLine()
-		{
-			await Task.CompletedTask;
-
-			return Environment.NewLine;
 		}
 
 		#endregion
