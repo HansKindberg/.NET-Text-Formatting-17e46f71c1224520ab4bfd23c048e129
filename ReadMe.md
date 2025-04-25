@@ -23,6 +23,8 @@ Library for text-formatting. Eg. json-formatting, xml-formatting, yaml-formattin
 
 #### 1.3.1 Comments
 
+**If we format yaml with comments, the comments are removed.**
+
 At the moment deserializing comments is not supported. The comments are removed when deserializing.
 
 - [Serialize comments #152](https://github.com/aaubry/YamlDotNet/issues/152)
