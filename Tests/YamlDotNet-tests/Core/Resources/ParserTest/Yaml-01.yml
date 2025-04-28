@@ -10,7 +10,9 @@ e:
     - e # Comment
     - f
     - g
+
 ---
+
 # Document 2
 c: d
 a: b # Comment
@@ -23,7 +25,9 @@ e:
     - e # Comment
     - f
     - g
+
 ---
+
 # Document 3
 c: d
 a: b # Comment
