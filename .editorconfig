@@ -10,6 +10,8 @@ insert_final_newline = false
 tab_width = 4
 trim_trailing_whitespace = true
 
+spelling_error_severity = hint # Removes spelling errors from the "Error List" in Visual Studio.
+
 [*.cshtml]
 charset = utf-8-bom
 
