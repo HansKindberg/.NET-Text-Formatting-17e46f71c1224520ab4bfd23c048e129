@@ -68,18 +68,18 @@ namespace YamlDotNetTests.Core
 			Assert.Equal(3, parsingEvents.OfType<DocumentStart>().Count());
 		}
 
-		private static async Task<string> GetYaml(string fileName)
-		{
-			return await GetYamlByPath(Path.Combine(_resourcesDirectory.FullName, $"{fileName}.yml"));
-		}
-
-		private static async Task<string> GetYamlByPath(string path)
+		private static async Task<string> GetFileText(string path)
 		{
 			await Task.CompletedTask;
 
 			// ReSharper disable MethodHasAsyncOverload
 			return File.ReadAllText(path).ResolveNewLine();
 			// ReSharper restore MethodHasAsyncOverload
+		}
+
+		private static async Task<string> GetYaml(string fileName)
+		{
+			return await GetFileText(Path.Combine(_resourcesDirectory.FullName, $"{fileName}.yml"));
 		}
 
 		#endregion
