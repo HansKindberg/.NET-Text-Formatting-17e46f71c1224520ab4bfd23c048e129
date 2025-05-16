@@ -42,6 +42,39 @@ namespace YamlDotNetTests.Core
 		}
 
 		[Theory]
+		[InlineData("Documents-01", 2, 0, 0, 0, 0)]
+		[InlineData("Documents-02", 5, 1, 1, 0, 1)]
+		[InlineData("Documents-03", 2, 0, 0, 0, 0)]
+		[InlineData("Documents-04", 11, 3, 3, 0, 3)]
+		[InlineData("Documents-05", 5, 1, 1, 0, 0)]
+		[InlineData("Documents-06", 11, 3, 3, 0, 0)]
+		public async Task Current_Iteration_Documents_Test(string fileName, int expectedNumberOfParsingEvents, int expectedNumberOfDocumentStarts, int expectedNumberOfDocumentEnds, int expectedNumberOfImplicitDocumentStarts, int expectedNumberOfImplicitDocumentEnds)
+		{
+			await Task.CompletedTask;
+
+			var text = await GetYaml(fileName);
+
+			var parsingEvents = new List<ParsingEvent>();
+
+			using(var stringReader = new StringReader(text))
+			{
+				var scanner = new Scanner(stringReader, false);
+				var parser = new Parser(scanner);
+
+				while(parser.MoveNext())
+				{
+					parsingEvents.Add(parser.Current!);
+				}
+			}
+
+			Assert.Equal(expectedNumberOfParsingEvents, parsingEvents.Count);
+			Assert.Equal(expectedNumberOfDocumentStarts, parsingEvents.OfType<DocumentStart>().Count());
+			Assert.Equal(expectedNumberOfDocumentEnds, parsingEvents.OfType<DocumentEnd>().Count());
+			Assert.Equal(expectedNumberOfImplicitDocumentStarts, parsingEvents.OfType<DocumentStart>().Count(documentStart => documentStart.IsImplicit));
+			Assert.Equal(expectedNumberOfImplicitDocumentEnds, parsingEvents.OfType<DocumentEnd>().Count(documentEnd => documentEnd.IsImplicit));
+		}
+
+		[Theory]
 		[InlineData("Yaml-01")]
 		public async Task Current_Iteration_Test(string fileName)
 		{
