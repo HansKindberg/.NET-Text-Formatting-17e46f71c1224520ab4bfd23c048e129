@@ -1,12 +1,12 @@
 # Document 1
-c: d
+c: &d
 a: b # Comment
 e:
-  c: d
+  c: *d
   # Comment
-  a: b # Comment
+  a: &b # Comment
   e:
-    - d
+    - *b
     - e # Comment
     - f
     - g

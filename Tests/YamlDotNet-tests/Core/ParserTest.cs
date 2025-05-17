@@ -74,6 +74,125 @@ namespace YamlDotNetTests.Core
 			Assert.Equal(expectedNumberOfImplicitDocumentEnds, parsingEvents.OfType<DocumentEnd>().Count(documentEnd => documentEnd.IsImplicit));
 		}
 
+		[Fact]
+		public async Task Current_Iteration_DocumentsDirectiveComments_Test1()
+		{
+			await Task.CompletedTask;
+
+			var text = await GetYaml("Documents-Directives-Comments-01");
+
+			var parsingEvents = new List<ParsingEvent>();
+
+			using(var stringReader = new StringReader(text))
+			{
+				var scanner = new Scanner(stringReader, false);
+				var parser = new Parser(scanner);
+
+				while(parser.MoveNext())
+				{
+					parsingEvents.Add(parser.Current!);
+				}
+			}
+
+			Assert.Equal(14, parsingEvents.Count);
+			Assert.Equal(typeof(StreamStart), parsingEvents[0].GetType());
+			Assert.Equal(typeof(DocumentStart), parsingEvents[1].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[2].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[3].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[4].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[5].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[6].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[7].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[8].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[9].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[10].GetType());
+			Assert.Equal(typeof(Scalar), parsingEvents[11].GetType());
+			Assert.Equal(typeof(DocumentEnd), parsingEvents[12].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[13].GetType());
+		}
+
+		[Fact]
+		public async Task Current_Iteration_DocumentsDirectiveComments_Test2()
+		{
+			await Task.CompletedTask;
+
+			var text = await GetYaml("Documents-Directives-Comments-02");
+
+			var parsingEvents = new List<ParsingEvent>();
+
+			using(var stringReader = new StringReader(text))
+			{
+				var scanner = new Scanner(stringReader, false);
+				var parser = new Parser(scanner);
+
+				while(parser.MoveNext())
+				{
+					parsingEvents.Add(parser.Current!);
+				}
+			}
+
+			Assert.Equal(22, parsingEvents.Count);
+			Assert.Equal(typeof(StreamStart), parsingEvents[0].GetType());
+			Assert.Equal(typeof(DocumentStart), parsingEvents[1].GetType());
+			Assert.Equal(typeof(Scalar), parsingEvents[2].GetType());
+			Assert.Equal(typeof(DocumentEnd), parsingEvents[3].GetType());
+			Assert.Equal(typeof(DocumentStart), parsingEvents[4].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[5].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[6].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[7].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[8].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[9].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[10].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[11].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[12].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[13].GetType());
+			Assert.Equal(typeof(Scalar), parsingEvents[14].GetType());
+			Assert.Equal(typeof(DocumentEnd), parsingEvents[15].GetType());
+			Assert.Equal(typeof(DocumentStart), parsingEvents[16].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[17].GetType());
+			Assert.Equal(typeof(Comment), parsingEvents[18].GetType());
+			Assert.Equal(typeof(Scalar), parsingEvents[19].GetType());
+			Assert.Equal(typeof(DocumentEnd), parsingEvents[20].GetType());
+			Assert.Equal(typeof(StreamEnd), parsingEvents[21].GetType());
+		}
+
+		[Fact]
+		public async Task Current_Iteration_DocumentsSpecial_Test1()
+		{
+			await Task.CompletedTask;
+
+			var text = await GetYaml("Documents-Special-01");
+
+			var parsingEvents = new List<ParsingEvent>();
+
+			using(var stringReader = new StringReader(text))
+			{
+				var scanner = new Scanner(stringReader, false);
+				var parser = new Parser(scanner);
+
+				while(parser.MoveNext())
+				{
+					parsingEvents.Add(parser.Current!);
+				}
+			}
+
+			Assert.Equal(14, parsingEvents.Count);
+			Assert.Equal(typeof(StreamStart), parsingEvents[0].GetType());
+			Assert.Equal(typeof(DocumentStart), parsingEvents[1].GetType());
+			Assert.Equal(typeof(Scalar), parsingEvents[2].GetType());
+			Assert.Equal(typeof(DocumentEnd), parsingEvents[3].GetType());
+			Assert.Equal(typeof(DocumentStart), parsingEvents[4].GetType());
+			Assert.Equal(typeof(MappingStart), parsingEvents[5].GetType());
+			Assert.Equal(typeof(Scalar), parsingEvents[6].GetType());
+			Assert.Equal(typeof(Scalar), parsingEvents[7].GetType());
+			Assert.Equal(typeof(MappingEnd), parsingEvents[8].GetType());
+			Assert.Equal(typeof(DocumentEnd), parsingEvents[9].GetType());
+			Assert.Equal(typeof(DocumentStart), parsingEvents[10].GetType());
+			Assert.Equal(typeof(Scalar), parsingEvents[11].GetType());
+			Assert.Equal(typeof(DocumentEnd), parsingEvents[12].GetType());
+			Assert.Equal(typeof(StreamEnd), parsingEvents[13].GetType());
+		}
+
 		[Theory]
 		[InlineData("Yaml-01")]
 		public async Task Current_Iteration_Test(string fileName)
