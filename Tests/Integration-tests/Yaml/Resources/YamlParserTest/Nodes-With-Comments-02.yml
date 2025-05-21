@@ -1,0 +1,17 @@
+# Comment 1
+# Comment 2
+a: &b
+c: *b
+# Comment 3
+---
+# Comment 4
+a:
+  # Comment 5
+  c: d
+  e: f # Comment 6
+  g:
+    # Comment 7
+    h: i # Comment 8
+# Comment 9
+j: k
+# Comment 10

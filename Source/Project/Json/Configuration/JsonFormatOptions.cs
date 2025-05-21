@@ -7,7 +7,7 @@ namespace HansKindberg.Text.Formatting.Json.Configuration
 		#region Properties
 
 		public IndentationOptions Indentation { get; set; } = new();
-		public SortingOptions Sorting { get; set; } = new();
+		public AlphabeticalSortingOptions Sorting { get; set; } = new();
 
 		#endregion
 	}

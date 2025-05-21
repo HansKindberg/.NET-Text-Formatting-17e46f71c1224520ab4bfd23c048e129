@@ -1,0 +1,5 @@
+# Comment 1
+# Comment 2
+a: &b
+c: *b
+# Comment 3

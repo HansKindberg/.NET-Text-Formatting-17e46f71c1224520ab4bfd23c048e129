@@ -1,0 +1,10 @@
+a: # Comment
+  q: >
+    This is a long string
+    that should be folded # Comment
+  b: c
+d:
+  e:
+  - f
+  - g # Comment
+  - h
