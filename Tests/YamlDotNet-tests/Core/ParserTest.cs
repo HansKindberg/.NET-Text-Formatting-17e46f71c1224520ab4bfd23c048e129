@@ -41,6 +41,31 @@ namespace YamlDotNetTests.Core
 			Assert.Equal("First comment", ((Comment)parsingEvents[1]).Value);
 		}
 
+		[Fact]
+		public async Task Current_Iteration_DocumentEndOnly_ShouldResultInAStreamStartAndAStreamEnd()
+		{
+			await Task.CompletedTask;
+
+			const string text = "...";
+
+			var parsingEvents = new List<ParsingEvent>();
+
+			using(var stringReader = new StringReader(text))
+			{
+				var scanner = new Scanner(stringReader, false);
+				var parser = new Parser(scanner);
+
+				while(parser.MoveNext())
+				{
+					parsingEvents.Add(parser.Current!);
+				}
+			}
+
+			Assert.Equal(2, parsingEvents.Count);
+			Assert.True(parsingEvents[0] is StreamStart);
+			Assert.True(parsingEvents[1] is StreamEnd);
+		}
+
 		[Theory]
 		[InlineData("Documents-01", 2, 0, 0, 0, 0)]
 		[InlineData("Documents-02", 5, 1, 1, 0, 1)]
@@ -191,6 +216,115 @@ namespace YamlDotNetTests.Core
 			Assert.Equal(typeof(Scalar), parsingEvents[11].GetType());
 			Assert.Equal(typeof(DocumentEnd), parsingEvents[12].GetType());
 			Assert.Equal(typeof(StreamEnd), parsingEvents[13].GetType());
+		}
+
+		[Fact]
+		public async Task Current_Iteration_DocumentStartAndDocumentEndOnSameLine_ShouldResultInAStreamStartAndADocumentStartAndAScalarAndADocumentEndAndAStreamEnd()
+		{
+			await Task.CompletedTask;
+
+			const string text = "---...";
+
+			var parsingEvents = new List<ParsingEvent>();
+
+			using(var stringReader = new StringReader(text))
+			{
+				var scanner = new Scanner(stringReader, false);
+				var parser = new Parser(scanner);
+
+				while(parser.MoveNext())
+				{
+					parsingEvents.Add(parser.Current!);
+				}
+			}
+
+			Assert.Equal(5, parsingEvents.Count);
+			Assert.True(parsingEvents[0] is StreamStart);
+			Assert.True(parsingEvents[1] is DocumentStart);
+			Assert.True(parsingEvents[2] is Scalar);
+			Assert.True(parsingEvents[3] is DocumentEnd);
+			Assert.True(parsingEvents[4] is StreamEnd);
+		}
+
+		[Fact]
+		public async Task Current_Iteration_DocumentStartAndDocumentEndWithNewLineBetween_ShouldResultInAStreamStartAndADocumentStartAndAScalarAndADocumentEndAndAStreamEnd()
+		{
+			await Task.CompletedTask;
+
+			var text = $"---{Environment.NewLine}...";
+
+			var parsingEvents = new List<ParsingEvent>();
+
+			using(var stringReader = new StringReader(text))
+			{
+				var scanner = new Scanner(stringReader, false);
+				var parser = new Parser(scanner);
+
+				while(parser.MoveNext())
+				{
+					parsingEvents.Add(parser.Current!);
+				}
+			}
+
+			Assert.Equal(5, parsingEvents.Count);
+			Assert.True(parsingEvents[0] is StreamStart);
+			Assert.True(parsingEvents[1] is DocumentStart);
+			Assert.True(parsingEvents[2] is Scalar);
+			Assert.True(parsingEvents[3] is DocumentEnd);
+			Assert.True(parsingEvents[4] is StreamEnd);
+		}
+
+		[Fact]
+		public async Task Current_Iteration_DocumentStartOnly_ShouldResultInAStreamStartAndADocumentStartAndAScalarAndADocumentEndAndAStreamEnd()
+		{
+			await Task.CompletedTask;
+
+			const string text = "---";
+
+			var parsingEvents = new List<ParsingEvent>();
+
+			using(var stringReader = new StringReader(text))
+			{
+				var scanner = new Scanner(stringReader, false);
+				var parser = new Parser(scanner);
+
+				while(parser.MoveNext())
+				{
+					parsingEvents.Add(parser.Current!);
+				}
+			}
+
+			Assert.Equal(5, parsingEvents.Count);
+			Assert.True(parsingEvents[0] is StreamStart);
+			Assert.True(parsingEvents[1] is DocumentStart);
+			Assert.True(parsingEvents[2] is Scalar);
+			Assert.True(parsingEvents[3] is DocumentEnd);
+			Assert.True(parsingEvents[4] is StreamEnd);
+		}
+
+		[Fact]
+		public async Task Current_Iteration_Empty_ShouldResultInAStreamStartAndAStreamEnd()
+		{
+			await Task.CompletedTask;
+
+			const string text = "";
+
+			var parsingEvents = new List<ParsingEvent>();
+
+			using(var stringReader = new StringReader(text))
+			{
+				var scanner = new Scanner(stringReader, false);
+				var parser = new Parser(scanner);
+
+				while(parser.MoveNext())
+				{
+					parsingEvents.Add(parser.Current!);
+				}
+			}
+
+			Assert.Equal(2, parsingEvents.Count);
+			Assert.True(parsingEvents[0] is StreamStart);
+			Assert.True(parsingEvents[1] is StreamEnd);
 		}
 
 		[Theory]
