@@ -37,6 +37,7 @@ namespace YamlDotNetTests.Core
 			Assert.Equal(2, parsingEvents.Count);
 			Assert.True(parsingEvents[0] is StreamStart);
 			Assert.True(parsingEvents[1] is Comment);
+			Assert.False(((Comment)parsingEvents[1]).IsInline);
 			Assert.Equal("First comment", ((Comment)parsingEvents[1]).Value);
 		}
 
