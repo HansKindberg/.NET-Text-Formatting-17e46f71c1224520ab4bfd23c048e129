@@ -136,6 +136,204 @@ namespace YamlDotNetTests.Core
 		}
 
 		[Fact]
+		public async Task Current_Iteration_CommentsOnlyWithLeadingDocumentStartWithComment_ShouldResultInParsingEventsForAllComments()
+		{
+			await Task.CompletedTask;
+
+			var text = await GetYaml("Comments-Only-WithLeadingDocumentStartWithComment");
+
+			var parsingEvents = new List<ParsingEvent>();
+
+			using(var stringReader = new StringReader(text))
+			{
+				var scanner = new Scanner(stringReader, false);
+				var parser = new Parser(scanner);
+
+				while(parser.MoveNext())
+				{
+					parsingEvents.Add(parser.Current!);
+				}
+			}
+
+			Assert.Equal(20, parsingEvents.Count);
+
+			Assert.True(parsingEvents[0] is StreamStart);
+			Assert.True(parsingEvents[1] is DocumentStart);
+
+			Assert.True(parsingEvents[2] is Comment);
+			Assert.True(((Comment)parsingEvents[2]).IsInline);
+			Assert.Equal("Leading document comment", ((Comment)parsingEvents[2]).Value);
+
+			Assert.True(parsingEvents[3] is Comment);
+			Assert.False(((Comment)parsingEvents[3]).IsInline);
+			Assert.Equal("First comment", ((Comment)parsingEvents[3]).Value);
+
+			Assert.True(parsingEvents[4] is Comment);
+			Assert.False(((Comment)parsingEvents[4]).IsInline);
+			Assert.Equal("Second comment", ((Comment)parsingEvents[4]).Value);
+
+			Assert.True(parsingEvents[5] is Comment);
+			Assert.False(((Comment)parsingEvents[5]).IsInline);
+			Assert.Equal("Third comment", ((Comment)parsingEvents[5]).Value);
+
+			Assert.True(parsingEvents[6] is Comment);
+			Assert.False(((Comment)parsingEvents[6]).IsInline);
+			Assert.Equal("Fourth comment", ((Comment)parsingEvents[6]).Value);
+
+			Assert.True(parsingEvents[7] is Comment);
+			Assert.False(((Comment)parsingEvents[7]).IsInline);
+			Assert.Equal("Fifth comment", ((Comment)parsingEvents[7]).Value);
+
+			Assert.True(parsingEvents[8] is Comment);
+			Assert.False(((Comment)parsingEvents[8]).IsInline);
+			Assert.Equal("Sixth comment", ((Comment)parsingEvents[8]).Value);
+
+			Assert.True(parsingEvents[9] is Comment);
+			Assert.False(((Comment)parsingEvents[9]).IsInline);
+			Assert.Equal("Seventh comment", ((Comment)parsingEvents[9]).Value);
+
+			Assert.True(parsingEvents[10] is Comment);
+			Assert.False(((Comment)parsingEvents[10]).IsInline);
+			Assert.Equal("Eighth comment", ((Comment)parsingEvents[10]).Value);
+
+			Assert.True(parsingEvents[11] is Comment);
+			Assert.False(((Comment)parsingEvents[11]).IsInline);
+			Assert.Equal("Ninth comment", ((Comment)parsingEvents[11]).Value);
+
+			Assert.True(parsingEvents[12] is Comment);
+			Assert.False(((Comment)parsingEvents[12]).IsInline);
+			Assert.Equal("Tenth comment", ((Comment)parsingEvents[12]).Value);
+
+			Assert.True(parsingEvents[13] is Comment);
+			Assert.False(((Comment)parsingEvents[13]).IsInline);
+			Assert.Equal("Eleventh comment", ((Comment)parsingEvents[13]).Value);
+
+			Assert.True(parsingEvents[14] is Comment);
+			Assert.False(((Comment)parsingEvents[14]).IsInline);
+			Assert.Equal("Twelfth comment", ((Comment)parsingEvents[14]).Value);
+
+			Assert.True(parsingEvents[15] is Comment);
+			Assert.False(((Comment)parsingEvents[15]).IsInline);
+			Assert.Equal("Thirteenth comment", ((Comment)parsingEvents[15]).Value);
+
+			Assert.True(parsingEvents[16] is Comment);
+			Assert.False(((Comment)parsingEvents[16]).IsInline);
+			Assert.Equal("Fourteenth comment", ((Comment)parsingEvents[16]).Value);
+
+			Assert.True(parsingEvents[17] is Scalar);
+			Assert.Empty(((Scalar)parsingEvents[17]).Value);
+			Assert.False(((Scalar)parsingEvents[17]).IsKey);
+			Assert.Equal(ScalarStyle.Plain, ((Scalar)parsingEvents[17]).Style);
+			Assert.Equal(((Scalar)parsingEvents[17]).End.Column, ((Scalar)parsingEvents[17]).Start.Column);
+			Assert.Equal(((Scalar)parsingEvents[17]).End.Index, ((Scalar)parsingEvents[17]).Start.Index);
+			Assert.Equal(((Scalar)parsingEvents[17]).End.Line, ((Scalar)parsingEvents[17]).Start.Line);
+			Assert.True(((Scalar)parsingEvents[17]).Tag.IsEmpty);
+
+			Assert.True(parsingEvents[18] is DocumentEnd);
+			Assert.True(parsingEvents[19] is StreamEnd);
+		}
+
+		[Fact]
+		public async Task Current_Iteration_CommentsOnlyWithLeadingScalarKey_ShouldResultInParsingEventsForAllComments()
+		{
+			await Task.CompletedTask;
+
+			var text = await GetYaml("Comments-Only-WithLeadingScalarKey");
+
+			var parsingEvents = new List<ParsingEvent>();
+
+			using(var stringReader = new StringReader(text))
+			{
+				var scanner = new Scanner(stringReader, false);
+				var parser = new Parser(scanner);
+
+				while(parser.MoveNext())
+				{
+					parsingEvents.Add(parser.Current!);
+				}
+			}
+
+			Assert.Equal(22, parsingEvents.Count);
+
+			Assert.True(parsingEvents[0] is StreamStart);
+			Assert.True(parsingEvents[1] is DocumentStart);
+			Assert.True(parsingEvents[2] is MappingStart);
+
+			Assert.True(parsingEvents[3] is Scalar);
+			Assert.True(((Scalar)parsingEvents[3]).IsKey);
+			Assert.Equal("a", ((Scalar)parsingEvents[3]).Value);
+
+			Assert.True(parsingEvents[4] is Comment);
+			Assert.False(((Comment)parsingEvents[4]).IsInline);
+			Assert.Equal("First comment", ((Comment)parsingEvents[4]).Value);
+
+			Assert.True(parsingEvents[5] is Comment);
+			Assert.False(((Comment)parsingEvents[5]).IsInline);
+			Assert.Equal("Second comment", ((Comment)parsingEvents[5]).Value);
+
+			Assert.True(parsingEvents[6] is Comment);
+			Assert.False(((Comment)parsingEvents[6]).IsInline);
+			Assert.Equal("Third comment", ((Comment)parsingEvents[6]).Value);
+
+			Assert.True(parsingEvents[7] is Comment);
+			Assert.False(((Comment)parsingEvents[7]).IsInline);
+			Assert.Equal("Fourth comment", ((Comment)parsingEvents[7]).Value);
+
+			Assert.True(parsingEvents[8] is Comment);
+			Assert.False(((Comment)parsingEvents[8]).IsInline);
+			Assert.Equal("Fifth comment", ((Comment)parsingEvents[8]).Value);
+
+			Assert.True(parsingEvents[9] is Comment);
+			Assert.False(((Comment)parsingEvents[9]).IsInline);
+			Assert.Equal("Sixth comment", ((Comment)parsingEvents[9]).Value);
+
+			Assert.True(parsingEvents[10] is Comment);
+			Assert.False(((Comment)parsingEvents[10]).IsInline);
+			Assert.Equal("Seventh comment", ((Comment)parsingEvents[10]).Value);
+
+			Assert.True(parsingEvents[11] is Comment);
+			Assert.False(((Comment)parsingEvents[11]).IsInline);
+			Assert.Equal("Eighth comment", ((Comment)parsingEvents[11]).Value);
+
+			Assert.True(parsingEvents[12] is Comment);
+			Assert.False(((Comment)parsingEvents[12]).IsInline);
+			Assert.Equal("Ninth comment", ((Comment)parsingEvents[12]).Value);
+
+			Assert.True(parsingEvents[13] is Comment);
+			Assert.False(((Comment)parsingEvents[13]).IsInline);
+			Assert.Equal("Tenth comment", ((Comment)parsingEvents[13]).Value);
+
+			Assert.True(parsingEvents[14] is Comment);
+			Assert.False(((Comment)parsingEvents[14]).IsInline);
+			Assert.Equal("Eleventh comment", ((Comment)parsingEvents[14]).Value);
+
+			Assert.True(parsingEvents[15] is Comment);
+			Assert.False(((Comment)parsingEvents[15]).IsInline);
+			Assert.Equal("Twelfth comment", ((Comment)parsingEvents[15]).Value);
+
+			Assert.True(parsingEvents[16] is Comment);
+			Assert.False(((Comment)parsingEvents[16]).IsInline);
+			Assert.Equal("Thirteenth comment", ((Comment)parsingEvents[16]).Value);
+
+			Assert.True(parsingEvents[17] is Comment);
+			Assert.False(((Comment)parsingEvents[17]).IsInline);
+			Assert.Equal("Fourteenth comment", ((Comment)parsingEvents[17]).Value);
+
+			Assert.True(parsingEvents[18] is Scalar);
+			Assert.Empty(((Scalar)parsingEvents[18]).Value);
+			Assert.False(((Scalar)parsingEvents[18]).IsKey);
+			Assert.Equal(ScalarStyle.Plain, ((Scalar)parsingEvents[18]).Style);
+			Assert.Equal(((Scalar)parsingEvents[18]).End.Column, ((Scalar)parsingEvents[18]).Start.Column);
+			Assert.Equal(((Scalar)parsingEvents[18]).End.Index, ((Scalar)parsingEvents[18]).Start.Index);
+			Assert.Equal(((Scalar)parsingEvents[18]).End.Line, ((Scalar)parsingEvents[18]).Start.Line);
+			Assert.True(((Scalar)parsingEvents[18]).Tag.IsEmpty);
+
+			Assert.True(parsingEvents[19] is MappingEnd);
+			Assert.True(parsingEvents[20] is DocumentEnd);
+			Assert.True(parsingEvents[21] is StreamEnd);
+		}
+
+		[Fact]
 		public async Task Current_Iteration_DocumentEndOnly_ShouldResultInAStreamStartAndAStreamEnd()
 		{
 			await Task.CompletedTask;
