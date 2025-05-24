@@ -22,7 +22,7 @@ namespace UnitTests.Json
 					Enabled = indentationEnabled,
 					Size = indentationSize
 				},
-				Sorting = new SortingOptions
+				Sorting = new AlphabeticalSortingOptions
 				{
 					Direction = sortingDirection,
 					Enabled = sortingEnabled
