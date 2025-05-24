@@ -1,0 +1,11 @@
+# Comment 1
+%YAML 1.2 # Comment 2
+%TAG ! tag # Comment 3
+%TAG !! tag # Comment 4
+%TAG !a! tag # Comment 5
+%TAG !b! tag # Comment 6
+%TAG !c! tag:prefix-1 # Comment 7
+%TAG !d! tag:prefix-2 # Comment 8
+--- # Comment 9
+... # Comment 10
+# Comment 11
