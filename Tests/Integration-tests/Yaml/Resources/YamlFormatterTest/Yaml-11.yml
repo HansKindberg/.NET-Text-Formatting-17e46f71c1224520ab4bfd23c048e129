@@ -1,0 +1,35 @@
+---
+# Document 1
+CCCCCCCC: d
+aaaa_aaaa:
+  c: d
+  a: b
+  EeeeFfff:
+  - item-1
+  - item-2:
+      aa: bb
+      cc: dd
+  - item-3
+  ggggHhhh: hhhhhHhhhh
+DdddDddd: D-value
+Bbbb_Bbbb: "B-Value"
+
+
+
+
+
+---
+# Document 2
+a: b
+
+
+
+
+
+---
+# Document 3
+a: b
+
+
+
+

@@ -1,0 +1,22 @@
+{
+	"DocumentSorting": {
+		"Comparison": "OrdinalIgnoreCase",
+		"Direction": "Ascending",
+		"Enabled": false
+	},
+	"EndOfDocument": "...",
+	"IndentationSize": 2,
+	"NamingConvention": "Underscored",
+	"NewLine": "\r\n",
+	"ScalarSorting": {
+		"Comparison": "OrdinalIgnoreCase",
+		"Direction": "Ascending",
+		"Enabled": true
+	},
+	"SequenceSorting": {
+		"Comparison": "OrdinalIgnoreCase",
+		"Direction": "Ascending",
+		"Enabled": false
+	},
+	"StartOfDocument": "---"
+}
