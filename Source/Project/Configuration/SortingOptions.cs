@@ -2,7 +2,7 @@ using System.ComponentModel;
 
 namespace HansKindberg.Text.Formatting.Configuration
 {
-	public class SortingOptions
+	public abstract class SortingOptions
 	{
 		#region Properties
 
