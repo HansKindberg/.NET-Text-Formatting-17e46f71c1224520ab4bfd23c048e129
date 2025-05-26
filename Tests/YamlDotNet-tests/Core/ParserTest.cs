@@ -619,6 +619,65 @@ namespace YamlDotNetTests.Core
 			Assert.True(parsingEvents[1] is StreamEnd);
 		}
 
+		[Fact]
+		public async Task Current_Iteration_InlineInvalidMapping_ShouldWorkProperly()
+		{
+			await Task.CompletedTask;
+			const string text = "key: {value-1, value-2}";
+			var parsingEvents = new List<ParsingEvent>();
+			using(var stringReader = new StringReader(text))
+			{
+				var scanner = new Scanner(stringReader, false);
+				var parser = new Parser(scanner);
+				while(parser.MoveNext())
+				{
+					parsingEvents.Add(parser.Current!);
+				}
+			}
+
+			Assert.Equal(13, parsingEvents.Count);
+		}
+
+		[Fact]
+		public async Task Current_Iteration_InlineMapping_ShouldWorkProperly()
+		{
+			await Task.CompletedTask;
+			const string text = "key: {value-1: null, value-2: null}";
+			var parsingEvents = new List<ParsingEvent>();
+			using(var stringReader = new StringReader(text))
+			{
+				var scanner = new Scanner(stringReader, false);
+				var parser = new Parser(scanner);
+				while(parser.MoveNext())
+				{
+					parsingEvents.Add(parser.Current!);
+				}
+			}
+
+			Assert.Equal(13, parsingEvents.Count);
+		}
+
+		[Fact]
+		public async Task Current_Iteration_InlineSequence_ShouldWorkProperly()
+		{
+			await Task.CompletedTask;
+			const string text = "key: [value-1, value-2]";
+			var parsingEvents = new List<ParsingEvent>();
+			using(var stringReader = new StringReader(text))
+			{
+				var scanner = new Scanner(stringReader, false);
+				var parser = new Parser(scanner);
+				while(parser.MoveNext())
+				{
+					parsingEvents.Add(parser.Current!);
+				}
+			}
+
+			Assert.Equal(11, parsingEvents.Count);
+			Assert.Single(parsingEvents.OfType<SequenceEnd>());
+			Assert.Single(parsingEvents.OfType<SequenceStart>());
+		}
+
 		[Theory]
 		[InlineData("Yaml-01")]
 		public async Task Current_Iteration_Test(string fileName)
