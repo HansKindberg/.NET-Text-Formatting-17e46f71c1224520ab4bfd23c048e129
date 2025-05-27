@@ -7,6 +7,7 @@ using HansKindberg.Text.Formatting.Yaml.Models.Extensions;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
 using IYamlDotNetParser = YamlDotNet.Core.IParser;
+using Scalar = YamlDotNet.Core.Events.Scalar;
 using TagDirective = YamlDotNet.Core.Tokens.TagDirective;
 using VersionDirective = YamlDotNet.Core.Tokens.VersionDirective;
 
@@ -25,25 +26,19 @@ namespace HansKindberg.Text.Formatting.Yaml
 
 		#region Methods
 
-		protected internal virtual async Task<IList<ParsingEvent>> ConsumeParsingEventsOnSameLine(ParsingEvent parsingEvent, IList<ParsingEvent> parsingEvents)
+		protected internal virtual void ConsumeParsingEvents(IList<ParsingEvent> parsingEvents, IList<ParsingEvent> parsingEventsOnSameLine, params ParsingEvent[] parsingEventsToConsume)
 		{
-			if(parsingEvent == null)
-				throw new ArgumentNullException(nameof(parsingEvent));
-
 			if(parsingEvents == null)
 				throw new ArgumentNullException(nameof(parsingEvents));
 
-			await Task.CompletedTask;
+			if(parsingEventsOnSameLine == null)
+				throw new ArgumentNullException(nameof(parsingEventsOnSameLine));
 
-			var parsingEventsOnSameLine = new List<ParsingEvent>();
-
-			while(parsingEvents.Count > 0 && parsingEvent.Start.Line == parsingEvents[0].Start.Line)
+			foreach(var parsingEventToConsume in parsingEventsToConsume)
 			{
-				parsingEventsOnSameLine.Add(parsingEvents[0]);
-				parsingEvents.RemoveAt(0);
+				parsingEvents.Remove(parsingEventToConsume);
+				parsingEventsOnSameLine.Remove(parsingEventToConsume);
 			}
-
-			return parsingEventsOnSameLine;
 		}
 
 		protected internal virtual async Task<IYamlNode> CreateAnchorAliasValueNode(AnchorAlias anchorAlias)
@@ -120,7 +115,7 @@ namespace HansKindberg.Text.Formatting.Yaml
 					}
 					case Scalar scalar:
 					{
-						var node = await this.CreateNodeForScalar(scalar, parsingEvents, parent.Sequence);
+						var node = await this.CreateNodeForScalar(scalar, parsingEvents);
 						await this.TransferComments(comments, node);
 						await parent.Add(node);
 						break;
@@ -156,11 +151,12 @@ namespace HansKindberg.Text.Formatting.Yaml
 
 			var node = await this.CreateAnchorAliasValueNode(anchorAlias);
 
-			var parsingEventsOnSameLine = await this.ConsumeParsingEventsOnSameLine(anchorAlias, parsingEvents);
+			var parsingEventsOnSameLine = await this.GetParsingEventsOnSameLine(anchorAlias, parsingEvents);
 
-			if(this.TryConsumeComment(parsingEventsOnSameLine, out var comment))
+			if(this.TryConsumeComment(parsingEvents, parsingEventsOnSameLine, out var comment))
 				node.Comment = comment;
-			else if(parsingEventsOnSameLine.Count > 0)
+
+			if(parsingEventsOnSameLine.Count > 0)
 				this.ThrowInvalidParsingEventsOnSameLineException(parsingEventsOnSameLine);
 
 			return node;
@@ -185,7 +181,7 @@ namespace HansKindberg.Text.Formatting.Yaml
 			return node;
 		}
 
-		protected internal virtual async Task<IYamlNode> CreateNodeForScalar(Scalar scalar, IList<ParsingEvent> parsingEvents, bool sequence)
+		protected internal virtual async Task<IYamlNode> CreateNodeForScalar(Scalar scalar, IList<ParsingEvent> parsingEvents)
 		{
 			if(scalar == null)
 				throw new ArgumentNullException(nameof(scalar));
@@ -193,43 +189,28 @@ namespace HansKindberg.Text.Formatting.Yaml
 			if(parsingEvents == null)
 				throw new ArgumentNullException(nameof(parsingEvents));
 
-			if(!scalar.IsKey && !sequence)
-				throw new InvalidOperationException("The scalar must be a key because the parent is not a sequence.");
+			var parsingEventsOnSameLine = await this.GetParsingEventsOnSameLine(scalar, parsingEvents);
 
-			var parsingEventsOnSameLine = await this.ConsumeParsingEventsOnSameLine(scalar, parsingEvents);
-
-			Comment? comment;
+			this.TryConsumeComment(parsingEvents, parsingEventsOnSameLine, out var comment);
 
 			if(!scalar.IsKey)
-			{
-				if(this.TryConsumeComment(parsingEventsOnSameLine, out comment))
-					return await this.CreateScalarValueNode(scalar, comment);
+				return await this.CreateScalarValueNode(scalar, comment);
 
-				if(parsingEventsOnSameLine.Any())
-					throw new InvalidOperationException(this.GetInvalidParsingEventsOnSameLineExceptionMessage(parsingEventsOnSameLine));
+			// When it is like this for example: "key: {value-1: null, value-2: null}" or "key: {value-1, value-2}"
+			var isInlineMappingValue = parsingEventsOnSameLine.FirstOrDefault() is MappingStart;
+			// When it is like this for example: "key: [value-1, value-2]"
+			var isInlineSequenceValue = parsingEventsOnSameLine.FirstOrDefault() is SequenceStart;
 
-				return await this.CreateScalarValueNode(scalar);
-			}
-
-			if(this.TryConsumeAnchorAlias(parsingEventsOnSameLine, out var anchorAliasValue))
-				return await this.CreateScalarKeyAnchorAliasValuePairNode(scalar, anchorAliasValue!);
-
-			if(this.TryConsumeAnchorAliasWithComment(parsingEventsOnSameLine, out anchorAliasValue, out comment))
-				return await this.CreateScalarKeyAnchorAliasValuePairNode(scalar, anchorAliasValue!, comment);
-
-			if(this.TryConsumeComment(parsingEventsOnSameLine, out comment))
+			if(isInlineMappingValue || isInlineSequenceValue || !parsingEventsOnSameLine.Any())
 				return await this.CreateScalarKeyNode(scalar, comment);
 
-			if(this.TryConsumeScalarValue(parsingEventsOnSameLine, out var scalarValue))
-				return await this.CreateScalarKeyScalarValuePairNode(scalar, scalarValue!);
+			if(this.TryConsumeAnchorAlias(parsingEvents, parsingEventsOnSameLine, out var anchorAliasValue))
+				return await this.CreateScalarKeyAnchorAliasValuePairNode(scalar, anchorAliasValue!, comment);
 
-			if(this.TryConsumeScalarValueWithComment(parsingEventsOnSameLine, out scalarValue, out comment))
+			if(this.TryConsumeScalarValue(parsingEvents, parsingEventsOnSameLine, out var scalarValue))
 				return await this.CreateScalarKeyScalarValuePairNode(scalar, scalarValue!, comment);
 
-			if(parsingEventsOnSameLine.Any())
-				throw new InvalidOperationException(this.GetInvalidParsingEventsOnSameLineExceptionMessage(parsingEventsOnSameLine));
-
-			return await this.CreateScalarKeyNode(scalar);
+			return await this.CreateScalarKeyNode(scalar, comment);
 		}
 
 		protected internal virtual async Task<IYamlNode> CreateNodeForStream(IList<ParsingEvent> parsingEvents)
@@ -358,6 +339,19 @@ namespace HansKindberg.Text.Formatting.Yaml
 			return $"Invalid parsing-events on same line: {string.Join(", ", parsingEvents.Select(parsingEvent => parsingEvent.GetType()))}";
 		}
 
+		protected internal virtual async Task<IList<ParsingEvent>> GetParsingEventsOnSameLine(ParsingEvent parsingEvent, IList<ParsingEvent> parsingEvents)
+		{
+			if(parsingEvent == null)
+				throw new ArgumentNullException(nameof(parsingEvent));
+
+			if(parsingEvents == null)
+				throw new ArgumentNullException(nameof(parsingEvents));
+
+			await Task.CompletedTask;
+
+			return [.. parsingEvents.Where(item => parsingEvent.Start.Line == item.Start.Line)];
+		}
+
 		protected internal virtual string GetStringRepresentation(string? value)
 		{
 			if(value != null && value.Length > this.InformationalYamlMaximumLength)
@@ -460,14 +454,17 @@ namespace HansKindberg.Text.Formatting.Yaml
 				{
 					parsingEvents.Remove(commentBeforeDocumentStart);
 				}
+
+				var documentStartComment = parsingEvents.OfType<Comment>().FirstOrDefault(comment => comment.Start.Line == documentStart.End.Line);
+				if(documentStartComment != null)
+				{
+					node.Comment = documentStartComment;
+					parsingEvents.Remove(documentStartComment);
+				}
 			}
 
-			var documentStartComment = parsingEvents.OfType<Comment>().FirstOrDefault(comment => comment.Start.Line == documentStart.End.Line);
-			if(documentStartComment != null)
-			{
-				node.Comment = documentStartComment;
-				parsingEvents.Remove(documentStartComment);
-			}
+			if(documentEnd.IsImplicit)
+				return;
 
 			var documentEndComment = parsingEvents.OfType<Comment>().FirstOrDefault(comment => comment.Start.Line == documentEnd.Start.Line);
 			if(documentEndComment != null)
@@ -564,69 +561,61 @@ namespace HansKindberg.Text.Formatting.Yaml
 			comments.Clear();
 		}
 
-		protected internal virtual bool TryConsume<T>(IList<ParsingEvent> parsingEvents, out T? parsingEvent) where T : ParsingEvent
+		protected internal virtual bool TryConsumeAnchorAlias(IList<ParsingEvent> parsingEvents, IList<ParsingEvent> parsingEventsOnSameLine, out AnchorAlias? anchorAlias)
 		{
 			if(parsingEvents == null)
 				throw new ArgumentNullException(nameof(parsingEvents));
 
-			parsingEvent = null;
+			if(parsingEventsOnSameLine == null)
+				throw new ArgumentNullException(nameof(parsingEventsOnSameLine));
 
-			if(parsingEvents.Count != 1)
+			anchorAlias = parsingEventsOnSameLine.FirstOrDefault() as AnchorAlias;
+
+			if(anchorAlias == null)
 				return false;
 
-			parsingEvent = parsingEvents[0] as T;
+			this.ConsumeParsingEvents(parsingEvents, parsingEventsOnSameLine, anchorAlias);
 
-			return parsingEvent != null;
+			return true;
 		}
 
-		protected internal virtual bool TryConsume<T1, T2>(IList<ParsingEvent> parsingEvents, out T1? firstParsingEvent, out T2? secondParsingEvent) where T1 : ParsingEvent where T2 : ParsingEvent
+		/// <summary>
+		/// Try to consume the last parsing-event on the same line as an inline comment.
+		/// </summary>
+		protected internal virtual bool TryConsumeComment(IList<ParsingEvent> parsingEvents, IList<ParsingEvent> parsingEventsOnSameLine, out Comment? comment)
 		{
 			if(parsingEvents == null)
 				throw new ArgumentNullException(nameof(parsingEvents));
 
-			firstParsingEvent = null;
-			secondParsingEvent = null;
+			if(parsingEventsOnSameLine == null)
+				throw new ArgumentNullException(nameof(parsingEventsOnSameLine));
 
-			if(parsingEvents.Count != 2)
+			comment = parsingEventsOnSameLine.LastOrDefault() as Comment;
+
+			if(comment is not { IsInline: true })
 				return false;
 
-			firstParsingEvent = parsingEvents[0] as T1;
-			secondParsingEvent = parsingEvents[1] as T2;
+			this.ConsumeParsingEvents(parsingEvents, parsingEventsOnSameLine, comment);
 
-			return firstParsingEvent != null && secondParsingEvent != null;
+			return true;
 		}
 
-		protected internal virtual bool TryConsumeAnchorAlias(IList<ParsingEvent> parsingEvents, out AnchorAlias? anchorAlias)
+		protected internal virtual bool TryConsumeScalarValue(IList<ParsingEvent> parsingEvents, IList<ParsingEvent> parsingEventsOnSameLine, out Scalar? scalar)
 		{
-			return this.TryConsume(parsingEvents, out anchorAlias);
-		}
+			if(parsingEvents == null)
+				throw new ArgumentNullException(nameof(parsingEvents));
 
-		protected internal virtual bool TryConsumeAnchorAliasWithComment(IList<ParsingEvent> parsingEvents, out AnchorAlias? anchorAlias, out Comment? comment)
-		{
-			var success = this.TryConsume(parsingEvents, out anchorAlias, out comment);
+			if(parsingEventsOnSameLine == null)
+				throw new ArgumentNullException(nameof(parsingEventsOnSameLine));
 
-			return success && comment!.IsInline;
-		}
+			scalar = parsingEventsOnSameLine.FirstOrDefault() as Scalar;
 
-		protected internal virtual bool TryConsumeComment(IList<ParsingEvent> parsingEvents, out Comment? comment)
-		{
-			var success = this.TryConsume(parsingEvents, out comment);
+			if(scalar is { IsKey: true })
+				return false;
 
-			return success && comment!.IsInline;
-		}
+			this.ConsumeParsingEvents(parsingEvents, parsingEventsOnSameLine, scalar!);
 
-		protected internal virtual bool TryConsumeScalarValue(IList<ParsingEvent> parsingEvents, out Scalar? scalar)
-		{
-			var success = this.TryConsume(parsingEvents, out scalar);
-
-			return success && !scalar!.IsKey;
-		}
-
-		protected internal virtual bool TryConsumeScalarValueWithComment(IList<ParsingEvent> parsingEvents, out Scalar? scalar, out Comment? comment)
-		{
-			var success = this.TryConsume(parsingEvents, out scalar, out comment);
-
-			return success && !scalar!.IsKey && comment!.IsInline;
+			return true;
 		}
 
 		#endregion

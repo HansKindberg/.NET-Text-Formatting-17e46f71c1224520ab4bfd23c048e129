@@ -16,11 +16,27 @@ namespace IntegrationTests.Yaml
 		#region Methods
 
 		[Theory]
+		[InlineData("Comments-01", 7)]
+		[InlineData("Comments-02", 20)]
+		[InlineData("Comments-03", 25)]
+		[InlineData("Documents-Directives-Comments-01", 20)]
+		[InlineData("Documents-Directives-Comments-02", 22)]
+		[InlineData("Empty-01", 2)]
+		[InlineData("Empty-02", 2)]
+		[InlineData("Nodes-With-Comments-01", 13)]
+		[InlineData("Nodes-With-Comments-02", 38)]
 		[InlineData("Yaml-01", 9)]
 		[InlineData("Yaml-02", 12)]
 		[InlineData("Yaml-03", 24)]
 		[InlineData("Yaml-04", 13)]
 		[InlineData("Yaml-05", 9)]
+		[InlineData("Yaml-06", 11)]
+		[InlineData("Yaml-07", 12)]
+		[InlineData("Yaml-08", 13)]
+		[InlineData("Yaml-09", 14)]
+		[InlineData("Yaml-10", 13)]
+		[InlineData("Yaml-11", 14)]
+		[InlineData("Yaml-12", 197)]
 		public async Task CreateParsingEvents_ShouldWorkProperly(string fileName, int expectedNumberOfItems)
 		{
 			var value = await GetYaml(fileName);
@@ -152,6 +168,13 @@ namespace IntegrationTests.Yaml
 		[InlineData("Yaml-03", 9)]
 		[InlineData("Yaml-04", 3)]
 		[InlineData("Yaml-05", 4)]
+		[InlineData("Yaml-06", 4)]
+		[InlineData("Yaml-07", 4)]
+		[InlineData("Yaml-08", 4)]
+		[InlineData("Yaml-09", 4)]
+		[InlineData("Yaml-10", 4)]
+		[InlineData("Yaml-11", 4)]
+		[InlineData("Yaml-12", 80)]
 		public async Task Parse_ShouldWorkProperly(string fileName, int expectedNumberOfNodes)
 		{
 			var value = await GetYaml(fileName);
