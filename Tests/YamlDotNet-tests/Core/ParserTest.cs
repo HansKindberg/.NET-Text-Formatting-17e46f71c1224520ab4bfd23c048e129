@@ -334,6 +334,28 @@ namespace YamlDotNetTests.Core
 		}
 
 		[Fact]
+		public async Task Current_Iteration_DocumentEndFollowedByDocumentStart_ShouldThrowAnInvalidOperationException()
+		{
+			var text = await GetYaml("DocumentEnd-FollowedBy-DocumentStart");
+
+			var invalidOperationException = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+			{
+				using(var stringReader = new StringReader(text))
+				{
+					var scanner = new Scanner(stringReader, false);
+					var parser = new Parser(scanner);
+
+					while(parser.MoveNext()) { }
+				}
+
+				return Task.CompletedTask;
+			});
+
+			Assert.NotNull(invalidOperationException);
+			Assert.Equal("The scanner should contain no more tokens.", invalidOperationException.Message);
+		}
+
+		[Fact]
 		public async Task Current_Iteration_DocumentEndOnly_ShouldResultInAStreamStartAndAStreamEnd()
 		{
 			await Task.CompletedTask;
