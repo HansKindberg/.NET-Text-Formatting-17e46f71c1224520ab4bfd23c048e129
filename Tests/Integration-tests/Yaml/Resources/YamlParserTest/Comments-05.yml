@@ -1,7 +1,10 @@
 # Comment 01
-    # Comment 02
+... # Document-end comment 01
+--- # Document-start comment 01
+# Comment 02
+---
     # Comment 03
-        # Comment 04    
+        # Comment 04
 
 # Comment 05
     # Comment 06
@@ -12,7 +15,7 @@
 
 
 
-                                    # Comment 09
+                                    # Comment 09    
     # Comment 10
     # Comment 11 
         # Comment 12
@@ -25,3 +28,6 @@
 
           # Comment 14
 
+
+
+... # Document-end comment 02

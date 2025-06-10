@@ -77,7 +77,7 @@ namespace HansKindberg.Text.Formatting.Yaml
 							throw new InvalidOperationException("The parent for an anchor-alias must be a sequence.");
 
 						var node = await this.CreateNodeForAnchorAlias(anchorAlias, parsingEvents);
-						await this.TransferComments(comments, node);
+						await this.TransferLeadingComments(comments, node);
 						await parent.Add(node);
 						break;
 					}
@@ -92,13 +92,54 @@ namespace HansKindberg.Text.Formatting.Yaml
 					}
 					case DocumentEnd:
 					{
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+						///////////////////////////////////////////////////////////await this.TransferTrailingComments(comments, root.Children.Last());
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 						parent = root;
 						break;
 					}
 					case DocumentStart documentStart:
 					{
 						var node = await this.CreateNodeForDocumentStart(documentStart, parsingEvents);
-						await this.TransferComments(comments, node);
+						await this.TransferLeadingComments(comments, node);
 						await parent.Add(node);
 						parent = node;
 						break;
@@ -116,7 +157,7 @@ namespace HansKindberg.Text.Formatting.Yaml
 					case Scalar scalar:
 					{
 						var node = await this.CreateNodeForScalar(scalar, parsingEvents);
-						await this.TransferComments(comments, node);
+						await this.TransferLeadingComments(comments, node);
 						await parent.Add(node);
 						break;
 					}
@@ -136,7 +177,7 @@ namespace HansKindberg.Text.Formatting.Yaml
 				}
 			}
 
-			root.Children.LastOrDefault()?.TrailingComments.AddRange(comments);
+			await this.TransferTrailingComments(comments, root.Children.LastOrDefault() ?? root);
 
 			return root;
 		}
@@ -233,7 +274,7 @@ namespace HansKindberg.Text.Formatting.Yaml
 			return await this.CreateStreamNode(streamStart, streamEnd);
 		}
 
-		protected internal virtual async Task<IList<ParsingEvent>> CreateParsingEvents(string value)
+		protected internal virtual async Task<IList<ParsingEvent>> CreateParsingEvents(string value, IList<int>? parsingEventIndexesToRemove = null)
 		{
 			if(value == null)
 				throw new ArgumentNullException(nameof(value));
@@ -244,19 +285,88 @@ namespace HansKindberg.Text.Formatting.Yaml
 			{
 				var yamlDotNetParser = await this.CreateYamlDotNetParser(stringReader);
 
-				while(yamlDotNetParser.MoveNext())
+				try
 				{
-					parsingEvents.Add(yamlDotNetParser.Current!);
+					while(yamlDotNetParser.MoveNext())
+					{
+						parsingEvents.Add(yamlDotNetParser.Current!);
+					}
+				}
+				catch(InvalidOperationException invalidOperationException)
+				{
+					// Special case 1
+					// If the value starts with:
+					//   ...
+					//   ---
+					// or
+					//   # Comment
+					//   ...
+					//   ---
+					if(invalidOperationException.Message == "The scanner should contain no more tokens.")
+						return await this.CreateParsingEvents($"---{Environment.NewLine}...{Environment.NewLine}{value}", [1, 2, 3]);
+
+					throw;
 				}
 			}
 
-			// Special case 1
-			if(await this.IsOnlyCommentsYaml(parsingEvents))
-				return await this.CreateParsingEvents($"--- # {this.InternalLeadingDocumentComment}{Environment.NewLine}{value}");
+			if(parsingEventIndexesToRemove != null && parsingEventIndexesToRemove.Any())
+			{
+				foreach(var parsingEventIndexToRemove in parsingEventIndexesToRemove.OrderByDescending(item => item))
+				{
+					parsingEvents.RemoveAt(parsingEventIndexToRemove);
+				}
+			}
 
 			// Special case 2
+			if(await this.IsOnlyCommentsYaml(parsingEvents))
+				return await this.CreateParsingEvents($"--- # {this.InternalLeadingDocumentComment}{Environment.NewLine}{value}", parsingEventIndexesToRemove);
+
+			// Special case 3
 			if(parsingEvents.Last() is not StreamEnd)
-				return await this.CreateParsingEvents($"{value}{Environment.NewLine}--- # {this.InternalTrailingDocumentComment}");
+				return await this.CreateParsingEvents($"{value}{Environment.NewLine}--- # {this.InternalTrailingDocumentComment}", parsingEventIndexesToRemove);
+
+			// Resolve parsing-events. Remove clutter, change position etc.
+			await this.ResolveParsingEvents(parsingEvents);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+			//////////////////////// Put comments on the right place.
+			//////////////////////await this.ResolveComments(parsingEvents);
+
+			//////////////////////await this.SettleHomelessParsingEvents(parsingEvents);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 			return parsingEvents;
 		}
@@ -334,6 +444,130 @@ namespace HansKindberg.Text.Formatting.Yaml
 			return new Parser(await this.CreateScanner(textReader));
 		}
 
+		////////////protected internal virtual async Task<DocumentStart?> GetClosestFolowingDocumentStart(ParsingEvent parsingEvent, IList<ParsingEvent> parsingEvents)
+		////////////{
+		////////////	if(parsingEvent == null)
+		////////////		throw new ArgumentNullException(nameof(parsingEvent));
+
+		////////////	if(parsingEvents == null)
+		////////////		throw new ArgumentNullException(nameof(parsingEvents));
+
+		////////////	await Task.CompletedTask;
+
+		////////////	return parsingEvents.OfType<DocumentStart>().FirstOrDefault(documentStart => documentStart.Start.Line > parsingEvent.End.Line);
+		////////////}
+
+		////////////protected internal virtual async Task<IList<KeyValuePair<DocumentStart, DocumentEnd>>> GetDocumentSpans(IList<ParsingEvent> parsingEvents)
+		////////////{
+		////////////	if(parsingEvents == null)
+		////////////		throw new ArgumentNullException(nameof(parsingEvents));
+
+		////////////	await Task.CompletedTask;
+
+		////////////	DocumentStart? currentDocumentStart = null;
+		////////////	var documentSpans = new List<KeyValuePair<DocumentStart, DocumentEnd>>();
+
+		////////////	foreach(var parsingEvent in parsingEvents)
+		////////////	{
+		////////////		switch(parsingEvent)
+		////////////		{
+		////////////			case DocumentStart documentStart:
+		////////////				currentDocumentStart = documentStart;
+		////////////				continue;
+		////////////			case DocumentEnd documentEnd:
+		////////////				documentSpans.Add(new KeyValuePair<DocumentStart, DocumentEnd>(currentDocumentStart!, documentEnd));
+		////////////				currentDocumentStart = null;
+		////////////				break;
+		////////////			default:
+		////////////				break;
+		////////////		}
+		////////////	}
+
+		////////////	return documentSpans;
+		////////////}
+
+		////////////protected internal virtual async Task<IList<SortedSet<long>>> GetHomelessLineGroups(IList<ParsingEvent> parsingEvents)
+		////////////{
+		////////////	if(parsingEvents == null)
+		////////////		throw new ArgumentNullException(nameof(parsingEvents));
+
+		////////////	var homelessLineGroups = new List<SortedSet<long>>();
+		////////////	var homelessLines = await this.GetHomelessLines(parsingEvents);
+
+		////////////	if(homelessLines.Count < 1)
+		////////////		return homelessLineGroups;
+
+		////////////	long? previousHomelessLine = null;
+
+		////////////	foreach(var homelessLine in homelessLines)
+		////////////	{
+		////////////		var homelessLineGroup = homelessLineGroups.LastOrDefault();
+
+		////////////		if(homelessLineGroup == null || homelessLine > previousHomelessLine + 1)
+		////////////		{
+		////////////			homelessLineGroup = [];
+		////////////			homelessLineGroups.Add(homelessLineGroup);
+		////////////		}
+
+		////////////		homelessLineGroup.Add(homelessLine);
+
+		////////////		previousHomelessLine = homelessLine;
+		////////////	}
+
+		////////////	return homelessLineGroups;
+		////////////}
+
+		////////////protected internal virtual async Task<SortedSet<long>> GetHomelessLines(IList<ParsingEvent> parsingEvents)
+		////////////{
+		////////////	if(parsingEvents == null)
+		////////////		throw new ArgumentNullException(nameof(parsingEvents));
+
+		////////////	var homelessLines = new SortedSet<long>();
+		////////////	var settledLines = await this.GetSettledLines(parsingEvents);
+
+		////////////	for(long i = 1; i <= parsingEvents.Max(parsingEvent => parsingEvent.End.Line); i++)
+		////////////	{
+		////////////		if(settledLines.Contains(i))
+		////////////			continue;
+
+		////////////		homelessLines.Add(i);
+		////////////	}
+
+		////////////	return homelessLines;
+		////////////}
+
+		////////////protected internal virtual async Task<IList<IList<ParsingEvent>>> GetHomelessParsingEventGroups(IList<ParsingEvent> parsingEvents)
+		////////////{
+		////////////	if(parsingEvents == null)
+		////////////		throw new ArgumentNullException(nameof(parsingEvents));
+
+		////////////	var homelessLineGroups = await this.GetHomelessLineGroups(parsingEvents);
+		////////////	var homelessParsingEventGroups = new List<IList<ParsingEvent>>();
+		////////////	var parsingEventTypesToExclude = new HashSet<Type> { typeof(DocumentEnd), typeof(DocumentStart), typeof(StreamEnd), typeof(StreamStart) };
+
+		////////////	foreach(var homelessLineGroup in homelessLineGroups)
+		////////////	{
+		////////////		var homelessParsingEventGroup = new List<ParsingEvent>();
+
+		////////////		foreach(var homelessLine in homelessLineGroup)
+		////////////		{
+		////////////			var homelessParsingEvents = parsingEvents.Where(parsingEvent => parsingEvent.Start.Line == homelessLine || parsingEvent.End.Line == homelessLine).ToList();
+
+		////////////			homelessParsingEvents = [.. homelessParsingEvents.Where(parsingEvent => !parsingEventTypesToExclude.Contains(parsingEvent.GetType()))];
+
+		////////////			if(homelessParsingEvents.Count < 1)
+		////////////				continue;
+
+		////////////			homelessParsingEventGroup.AddRange(homelessParsingEvents);
+		////////////		}
+
+		////////////		if(homelessParsingEventGroup.Count > 0)
+		////////////			homelessParsingEventGroups.Add(homelessParsingEventGroup);
+		////////////	}
+
+		////////////	return homelessParsingEventGroups;
+		////////////}
+
 		protected internal virtual string GetInvalidParsingEventsOnSameLineExceptionMessage(IList<ParsingEvent> parsingEvents)
 		{
 			return $"Invalid parsing-events on same line: {string.Join(", ", parsingEvents.Select(parsingEvent => parsingEvent.GetType()))}";
@@ -351,6 +585,25 @@ namespace HansKindberg.Text.Formatting.Yaml
 
 			return [.. parsingEvents.Where(item => parsingEvent.Start.Line == item.Start.Line)];
 		}
+
+		////////////protected internal virtual async Task<SortedSet<long>> GetSettledLines(IList<ParsingEvent> parsingEvents)
+		////////////{
+		////////////	if(parsingEvents == null)
+		////////////		throw new ArgumentNullException(nameof(parsingEvents));
+
+		////////////	var documentSpans = await this.GetDocumentSpans(parsingEvents);
+		////////////	var settledLines = new SortedSet<long>();
+
+		////////////	foreach(var documentSpan in documentSpans)
+		////////////	{
+		////////////		for(var i = documentSpan.Key.Start.Line; i <= documentSpan.Value.End.Line; i++)
+		////////////		{
+		////////////			settledLines.Add(i);
+		////////////		}
+		////////////	}
+
+		////////////	return settledLines;
+		////////////}
 
 		protected internal virtual string GetStringRepresentation(string? value)
 		{
@@ -390,8 +643,6 @@ namespace HansKindberg.Text.Formatting.Yaml
 			try
 			{
 				var parsingEvents = await this.CreateParsingEvents(value);
-
-				await this.ResolveParsingEvents(parsingEvents);
 
 				var node = await this.CreateNode(parsingEvents);
 
@@ -497,12 +748,47 @@ namespace HansKindberg.Text.Formatting.Yaml
 			}
 		}
 
-		protected internal virtual async Task ResolveParsingEvents(IList<ParsingEvent> parsingEvents)
+		protected internal virtual async Task ResolveComments(IList<ParsingEvent> parsingEvents)
 		{
 			if(parsingEvents == null)
 				throw new ArgumentNullException(nameof(parsingEvents));
 
 			await Task.CompletedTask;
+
+			var parsingEventsOrderedByStartLine = parsingEvents.OrderBy(parsingEvent => parsingEvent.Start.Line).ToList();
+
+			for(var i = parsingEventsOrderedByStartLine.Count - 1; i >= 0; i--)
+			{
+				var orderedParsingEvent = parsingEventsOrderedByStartLine[i];
+
+				if(parsingEvents[i] == orderedParsingEvent)
+					continue;
+
+				parsingEvents.Remove(orderedParsingEvent);
+				parsingEvents.Insert(i, orderedParsingEvent);
+			}
+
+			var explicitDocumentEnds = parsingEvents.OfType<DocumentEnd>().Where(documentEnd => !documentEnd.IsImplicit).ToList();
+
+			foreach(var documentEnd in explicitDocumentEnds)
+			{
+				var documentEndComment = parsingEvents.OfType<Comment>().FirstOrDefault(comment => comment.Start.Line == documentEnd.Start.Line);
+
+				if(documentEndComment == null)
+					continue;
+
+				parsingEvents.Remove(documentEndComment);
+
+				var index = parsingEvents.IndexOf(documentEnd);
+
+				parsingEvents.Insert(index, new Comment(documentEndComment.Value, true, documentEndComment.Start, documentEndComment.End));
+			}
+		}
+
+		protected internal virtual async Task ResolveParsingEvents(IList<ParsingEvent> parsingEvents)
+		{
+			if(parsingEvents == null)
+				throw new ArgumentNullException(nameof(parsingEvents));
 
 			var internalLeadingDocumentCommentExists = false;
 			var internalTrailingDocumentCommentExists = false;
@@ -532,19 +818,77 @@ namespace HansKindberg.Text.Formatting.Yaml
 			if(internalLeadingDocumentCommentExists)
 				parsingEvents[1] = new DocumentStart(); // Make the first document-start, that was added internally, to be implicit.
 
-			if(!internalTrailingDocumentCommentExists)
-				return;
+			if(internalTrailingDocumentCommentExists)
+			{
+				parsingEvents.Remove(parsingEvents.OfType<DocumentEnd>().Last()); // Remove the last document-end that was added internally.
+				parsingEvents.Remove(parsingEvents.OfType<DocumentStart>().Last()); // Remove the last document-start that was added internally.
+			}
 
-			parsingEvents.Remove(parsingEvents.OfType<DocumentEnd>().Last()); // Remove the last document-end that was added internally.
-			parsingEvents.Remove(parsingEvents.OfType<DocumentStart>().Last()); // Remove the last document-start that was added internally.
+			await this.ResolveComments(parsingEvents);
 		}
+
+		/////////////// <summary>
+		/////////////// If we have parsing-events that is not "inside" a document we put them inside a document. This probably only concerns comments.
+		/////////////// </summary>
+		////////////protected internal virtual async Task SettleHomelessParsingEvents(IList<ParsingEvent> parsingEvents)
+		////////////{
+		////////////	if(parsingEvents == null)
+		////////////		throw new ArgumentNullException(nameof(parsingEvents));
+
+		////////////	var homelessParsingEventGroups = await this.GetHomelessParsingEventGroups(parsingEvents);
+
+		////////////	if(homelessParsingEventGroups.Count < 1)
+		////////////		return;
+
+		////////////	foreach(var homelessParsingEventGroup in homelessParsingEventGroups)
+		////////////	{
+		////////////		foreach(var parsingEvent in homelessParsingEventGroup)
+		////////////		{
+		////////////			parsingEvents.Remove(parsingEvent);
+		////////////		}
+
+		////////////		var firstHomelessParsingEvent = homelessParsingEventGroup.First();
+
+		////////////		var closestFollowingDocumentStart = await this.GetClosestFolowingDocumentStart(firstHomelessParsingEvent, parsingEvents);
+
+		////////////		var index = closestFollowingDocumentStart != null ? parsingEvents.IndexOf(closestFollowingDocumentStart) : parsingEvents.Count - 1;
+
+		////////////		var reversedHomelessParsingEvents = homelessParsingEventGroup.Reverse().ToList();
+
+		////////////		parsingEvents.Insert(index, new DocumentEnd(true));
+
+		////////////		foreach(var parsingEvent in reversedHomelessParsingEvents)
+		////////////		{
+		////////////			parsingEvents.Insert(index, parsingEvent);
+		////////////		}
+
+		////////////		parsingEvents.Insert(index, new DocumentStart());
+		////////////	}
+		////////////}
 
 		protected internal virtual void ThrowInvalidParsingEventsOnSameLineException(IList<ParsingEvent> parsingEvents)
 		{
 			throw new InvalidOperationException(this.GetInvalidParsingEventsOnSameLineExceptionMessage(parsingEvents));
 		}
 
-		protected internal virtual async Task TransferComments(IList<Comment> comments, IYamlNode node)
+		protected internal virtual async Task TransferComments(IList<Comment> comments, IList<Comment> destination)
+		{
+			if(comments == null)
+				throw new ArgumentNullException(nameof(comments));
+
+			if(destination == null)
+				throw new ArgumentNullException(nameof(destination));
+
+			await Task.CompletedTask;
+
+			if(!comments.Any())
+				return;
+
+			destination.AddRange(comments);
+			comments.Clear();
+		}
+
+		protected internal virtual async Task TransferLeadingComments(IList<Comment> comments, IYamlNode node)
 		{
 			if(comments == null)
 				throw new ArgumentNullException(nameof(comments));
@@ -552,13 +896,18 @@ namespace HansKindberg.Text.Formatting.Yaml
 			if(node == null)
 				throw new ArgumentNullException(nameof(node));
 
-			await Task.CompletedTask;
+			await this.TransferComments(comments, node.LeadingComments);
+		}
 
-			if(!comments.Any())
-				return;
+		protected internal virtual async Task TransferTrailingComments(IList<Comment> comments, IYamlNode node)
+		{
+			if(comments == null)
+				throw new ArgumentNullException(nameof(comments));
 
-			node.LeadingComments.AddRange(comments);
-			comments.Clear();
+			if(node == null)
+				throw new ArgumentNullException(nameof(node));
+
+			await this.TransferComments(comments, node.TrailingComments);
 		}
 
 		protected internal virtual bool TryConsumeAnchorAlias(IList<ParsingEvent> parsingEvents, IList<ParsingEvent> parsingEventsOnSameLine, out AnchorAlias? anchorAlias)

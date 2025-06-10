@@ -5,7 +5,7 @@ using Shared.Extensions;
 
 namespace IntegrationTests.Yaml
 {
-	public class YamlParserTest
+	public class NewYamlParserTest
 	{
 		#region Fields
 
@@ -16,43 +16,45 @@ namespace IntegrationTests.Yaml
 		#region Methods
 
 		[Theory]
-		[InlineData("Comments-01", 5)]
-		[InlineData("Comments-02", 18)]
-		[InlineData("Comments-03", 22)]
-		[InlineData("Documents-Directives-Comments-01", 15)]
-		[InlineData("Documents-Directives-Comments-02", 19)]
+		[InlineData("Comments-01", 3)]
+		[InlineData("Comments-02", 16)]
+		[InlineData("Comments-03", 19)]
+		[InlineData("Comments-04", 18)]
+		[InlineData("Comments-05", 23)]
+		[InlineData("Documents-Directives-Comments-01", 22)]
+		[InlineData("Documents-Directives-Comments-02", 26)]
 		[InlineData("Empty-01", 2)]
 		[InlineData("Empty-02", 2)]
-		[InlineData("Nodes-With-Comments-01", 13)]
-		[InlineData("Nodes-With-Comments-02", 38)]
+		[InlineData("Nodes-With-Comments-01", 15)]
+		[InlineData("Nodes-With-Comments-02", 51)]
 		[InlineData("Yaml-01", 9)]
-		[InlineData("Yaml-02", 12)]
-		[InlineData("Yaml-03", 24)]
-		[InlineData("Yaml-04", 13)]
-		[InlineData("Yaml-05", 9)]
-		[InlineData("Yaml-06", 11)]
-		[InlineData("Yaml-07", 12)]
-		[InlineData("Yaml-08", 11)]
-		[InlineData("Yaml-09", 12)]
-		[InlineData("Yaml-10", 13)]
-		[InlineData("Yaml-11", 14)]
-		[InlineData("Yaml-12", 19)]
-		[InlineData("Yaml-20", 197)]
-		public async Task CreateParsingEvents_ShouldWorkProperly(string fileName, int expectedNumberOfItems)
+		[InlineData("Yaml-02", 14)]
+		[InlineData("Yaml-03", 33)]
+		[InlineData("Yaml-04", 15)]
+		[InlineData("Yaml-05", 10)]
+		[InlineData("Yaml-06", 12)]
+		[InlineData("Yaml-07", 13)]
+		[InlineData("Yaml-08", 12)]
+		[InlineData("Yaml-09", 13)]
+		[InlineData("Yaml-10", 18)]
+		[InlineData("Yaml-11", 19)]
+		[InlineData("Yaml-12", 18)]
+		[InlineData("Yaml-20", 347)]
+		public async Task CreateTokens_ShouldWorkProperly(string fileName, int expectedNumberOfItems)
 		{
 			var value = await GetYaml(fileName);
 
 			var yamlParser = await CreateYamlParser();
-			var parsingEvents = await yamlParser.CreateParsingEvents(value);
+			var tokens = await yamlParser.CreateTokens(value);
 
-			Assert.Equal(expectedNumberOfItems, parsingEvents.Count);
+			Assert.Equal(expectedNumberOfItems, tokens.Count);
 		}
 
-		private static async Task<YamlParser> CreateYamlParser()
+		private static async Task<NewYamlParser> CreateYamlParser()
 		{
 			await Task.CompletedTask;
 
-			return new YamlParser();
+			return new NewYamlParser();
 		}
 
 		private static async Task<string> GetFileText(string path)
@@ -73,6 +75,8 @@ namespace IntegrationTests.Yaml
 		[InlineData("Comments-01", "0,1")]
 		[InlineData("Comments-02", "0,14")]
 		[InlineData("Comments-03", "0,0;1,0;1,12")]
+		[InlineData("Comments-04", "0,0;1,0;1,12")]
+		[InlineData("Comments-05", "0,0;1,0;1,12")]
 		public async Task Parse_Comments_ShouldWorkProperly(string fileName, string expectedResult)
 		{
 			var value = await GetYaml(fileName);
