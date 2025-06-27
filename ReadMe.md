@@ -28,8 +28,11 @@ Library for text-formatting. Eg. json-formatting, xml-formatting, yaml-formattin
 
 #### 1.3.2 Information
 
+- [YAML](https://yaml.org)
+- [YAML Vocabulary Glossary](https://yaml.org/spec/1.2.2/ext/glossary)
 - [YAML Tutorial : A Complete Language Guide with Examples](https://spacelift.io/blog/yaml)
 - [Don’t Repeat Yourself with Anchors, Aliases and Extensions in Docker Compose Files](https://medium.com/@kinghuang/docker-compose-anchors-aliases-extensions-a1e4105d70bd)
+- [Make YAML as easy as it looks](https://opensource.com/article/21/9/yaml-cheat-sheet)
 
 ## 2 Development
 
