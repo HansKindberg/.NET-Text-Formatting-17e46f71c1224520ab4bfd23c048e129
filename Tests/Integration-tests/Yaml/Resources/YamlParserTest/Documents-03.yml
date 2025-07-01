@@ -1,0 +1,41 @@
+# Comment 01
+...
+
+
+---
+...
+
+
+a: b
+c: d
+e: f
+
+
+---
+
+
+# Comment 05
+---
+...
+
+
+# Comment 06
+# Comment 07
+# Comment 08
+---
+...
+
+
+---
+# Comment 09
+# Comment 10
+# Comment 11
+...
+
+
+%YAML 1.2
+---
+
+
+---
+... # Comment 12

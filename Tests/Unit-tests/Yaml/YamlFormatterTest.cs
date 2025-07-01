@@ -1,6 +1,6 @@
 using HansKindberg.Text.Formatting;
 using HansKindberg.Text.Formatting.Yaml;
-using HansKindberg.Text.Formatting.Yaml.Collections;
+using HansKindberg.Text.Formatting.Yaml.Models;
 using HansKindberg.Text.Formatting.Yaml.Serialization;
 using Moq;
 using YamlDotNet.Serialization.NamingConventions;
@@ -11,7 +11,7 @@ namespace UnitTests.Yaml
 	{
 		#region Fields
 
-		private static readonly YamlFormatter _yamlFormatter = new(Mock.Of<IParser<IYamlNode>>());
+		private static readonly YamlFormatter _yamlFormatter = new(Mock.Of<IParser<IYamlStream>>());
 
 		#endregion
 

@@ -1,30 +1,49 @@
-using HansKindberg.Text.Formatting.Yaml.Configuration;
-using YamlDotNet.Core.Events;
-using YamlDotNet.Serialization;
-
 namespace HansKindberg.Text.Formatting.Yaml.Models
 {
-	public interface IYamlNode
+	public interface IYamlNode : IFormatableYaml, IYamlCommentSurroundable
 	{
 		#region Properties
 
+		//////////////////////////////////////////////Anchor? Anchor { get; }
+		//////////////////////////////////////////////AnchorAlias? AnchorAlias { get; }
+		//////////////////////////////////////////////BlockEntry? BlockEntry { get; }
 		IEnumerable<IYamlNode> Children { get; }
-		Comment? Comment { get; set; }
-		IList<Comment> LeadingComments { get; }
+		////////////////////////////////Comment? Comment { get; }
+		////////////////////////////////Scalar? Key { get; }
+
+
+		/// <summary>
+		/// The structural depth of the node in the logical tree.
+		/// </summary>
 		int Level { get; }
+
+		/// <summary>
+		/// The number of indentation steps for YAML formatting.
+		/// This may differ from <see cref="Level" /> depending on formatting needs.
+		/// </summary>
+		int IndentationLevel { get; }
+
+
+
+
+
+
+
+
+
+
+
+
+
 		IYamlNode? Parent { get; set; }
-		bool Sequence { get; set; }
-		IList<Comment> TrailingComments { get; }
+		////////////////////////////////Tag? Tag { get; }
+		////////////////////////////////Scalar? Value { get; }
 
 		#endregion
 
 		#region Methods
 
 		Task Add(IYamlNode child);
-		Task ApplyNamingConvention(INamingConvention namingConvention);
-		Task Sort(IComparer<IYamlNode> comparer);
-		string ToString(YamlFormatOptions options);
-		Task Write(IList<string> lines, YamlFormatOptions options);
 
 		#endregion
 	}
