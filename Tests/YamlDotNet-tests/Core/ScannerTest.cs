@@ -29,6 +29,7 @@ namespace YamlDotNetTests.Core
 		[Theory]
 		[InlineData("FlowEntries-01", 2)]
 		[InlineData("FlowEntries-02", 2)]
+		[InlineData("FlowEntries-03", 2)]
 		public async Task FlowEntries_Test(string fileName, int expectedNumberOfFlowEntries)
 		{
 			await Task.CompletedTask;
