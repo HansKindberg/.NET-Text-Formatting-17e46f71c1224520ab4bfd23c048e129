@@ -1,5 +1,5 @@
-# Comment 1
-# Comment 2
-a: &b
+# Comment 01
+# Comment 02
+a: &b # Comment 03
 c: *b
-# Comment 3
+# Comment 04

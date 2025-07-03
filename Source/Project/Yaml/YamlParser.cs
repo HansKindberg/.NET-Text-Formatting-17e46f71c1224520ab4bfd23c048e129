@@ -1,304 +1,347 @@
 using HansKindberg.Text.Formatting.Collections.Generic.Extensions;
 using HansKindberg.Text.Formatting.Extensions;
-using HansKindberg.Text.Formatting.Yaml.Core.Events.Extensions;
-using HansKindberg.Text.Formatting.Yaml.Core.Tokens.Extensions;
 using HansKindberg.Text.Formatting.Yaml.Models;
 using HansKindberg.Text.Formatting.Yaml.Models.Extensions;
 using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
-using IYamlDotNetParser = YamlDotNet.Core.IParser;
-using Scalar = YamlDotNet.Core.Events.Scalar;
-using TagDirective = YamlDotNet.Core.Tokens.TagDirective;
-using VersionDirective = YamlDotNet.Core.Tokens.VersionDirective;
+using YamlDotNet.Core.Tokens;
 
 namespace HansKindberg.Text.Formatting.Yaml
 {
 	/// <inheritdoc />
-	public class YamlParser : IParser<IYamlNode>
+	public class YamlParser : IParser<IYamlStream>
 	{
 		#region Properties
 
 		protected internal virtual int InformationalYamlMaximumLength => 100;
-		protected internal virtual string InternalLeadingDocumentComment { get; } = $"{Guid.NewGuid()}-{Guid.NewGuid()}-{Guid.NewGuid()}-{Guid.NewGuid()}";
-		protected internal virtual string InternalTrailingDocumentComment { get; } = $"{Guid.NewGuid()}-{Guid.NewGuid()}-{Guid.NewGuid()}-{Guid.NewGuid()}";
 
 		#endregion
 
 		#region Methods
 
-		protected internal virtual void ConsumeParsingEvents(IList<ParsingEvent> parsingEvents, IList<ParsingEvent> parsingEventsOnSameLine, params ParsingEvent[] parsingEventsToConsume)
+		protected internal virtual async Task AddMissingFlowEntries(IList<Token> tokens)
 		{
-			if(parsingEvents == null)
-				throw new ArgumentNullException(nameof(parsingEvents));
+			if(tokens == null)
+				throw new ArgumentNullException(nameof(tokens));
 
-			if(parsingEventsOnSameLine == null)
-				throw new ArgumentNullException(nameof(parsingEventsOnSameLine));
+			await Task.CompletedTask;
 
-			foreach(var parsingEventToConsume in parsingEventsToConsume)
+			for(var i = tokens.Count - 1; i >= 0; i--)
 			{
-				parsingEvents.Remove(parsingEventToConsume);
-				parsingEventsOnSameLine.Remove(parsingEventToConsume);
+				var token = tokens[i];
+
+				if(token is not FlowSequenceStart)
+					continue;
+
+				var nextIndex = i + 1;
+
+				if(nextIndex >= tokens.Count)
+					continue;
+
+				tokens.Insert(nextIndex, new FlowEntry(token.Start, token.End));
 			}
 		}
 
-		protected internal virtual async Task<IYamlNode> CreateAnchorAliasValueNode(AnchorAlias anchorAlias)
+		protected internal virtual async Task BuildStream(IYamlStream stream, IList<Token> tokens)
 		{
-			await Task.CompletedTask;
+			var map = await this.CreateDocumentMap(stream, tokens);
 
-			return new YamlAnchorAliasValueNode(anchorAlias);
-		}
-
-		protected internal virtual async Task<IYamlDocumentNode> CreateDocumentNode(DocumentStart start, DocumentEnd end)
-		{
-			await Task.CompletedTask;
-
-			return new YamlDocumentNode(start, end);
-		}
-
-		protected internal virtual async Task<IYamlNode> CreateNode(IList<ParsingEvent> parsingEvents)
-		{
-			if(parsingEvents == null)
-				throw new ArgumentNullException(nameof(parsingEvents));
-
-			var comments = new List<Comment>();
-			var root = await this.CreateNodeForStream(parsingEvents);
-			var parent = root;
-
-			while(parsingEvents.Count > 0)
+			foreach(var mapping in map)
 			{
-				var parsingEvent = parsingEvents[0];
-				parsingEvents.RemoveAt(0);
+				await this.PopulateDocument(mapping.Key, mapping.Value);
+				stream.Documents.Add(mapping.Key);
+			}
+		}
 
-				switch(parsingEvent)
+		protected internal virtual async Task CorrectTokens(IList<Token> tokens)
+		{
+			await this.AddMissingFlowEntries(tokens);
+			await this.RemoveInvalidFlowEntries(tokens);
+		}
+
+		protected internal virtual async Task<IYamlNode> CreateContentNode(IList<Token> tokens)
+		{
+			if(tokens == null)
+				throw new ArgumentNullException(nameof(tokens));
+
+			if(!tokens.Any())
+				throw new ArgumentException("The tokens can not be empty.", nameof(tokens));
+
+			await Task.CompletedTask;
+
+			var node = new YamlContentNode();
+
+			// The key-token is not necessary. We use Scalar.IsKey to determine if a scalar is a key.
+			if(tokens[0] is Key)
+				tokens.RemoveAt(0);
+
+			// The value-token is not necessary. We use Scalar.IsKey to determine if a scalar is a value.
+			var value = tokens.FirstOrDefault(token => token is Value);
+			if(value != null)
+				tokens.Remove(value);
+
+			// First
+			if(tokens.FirstOrDefault() is Scalar { IsKey: true } keyScalar)
+			{
+				node.Key = keyScalar;
+				tokens.RemoveAt(0);
+			}
+
+			// Last
+			if(tokens.LastOrDefault() is Comment { IsInline: true } comment)
+			{
+				node.Comment = comment;
+				tokens.Remove(comment);
+			}
+
+			var anchor = tokens.OfType<Anchor>().FirstOrDefault();
+			if(anchor != null)
+			{
+				node.Anchor = anchor;
+				tokens.Remove(anchor);
+			}
+
+			var anchorAlias = tokens.OfType<AnchorAlias>().FirstOrDefault();
+			if(anchorAlias != null)
+			{
+				node.AnchorAlias = anchorAlias;
+				tokens.Remove(anchorAlias);
+			}
+
+			var tag = tokens.OfType<Tag>().FirstOrDefault();
+			if(tag != null)
+			{
+				node.Tag = tag;
+				tokens.Remove(tag);
+			}
+
+			var valueScalar = tokens.OfType<Scalar>().FirstOrDefault(scalar => !scalar.IsKey);
+			if(valueScalar != null)
+			{
+				node.Value = valueScalar;
+				tokens.Remove(valueScalar);
+			}
+
+			if(tokens.Any())
+				throw new InvalidOperationException("Invalid tokens for creating a yaml-content-node.");
+
+			return node;
+		}
+
+		protected internal virtual async Task<IYamlDocument> CreateDocument(IYamlStream stream)
+		{
+			if(stream == null)
+				throw new ArgumentNullException(nameof(stream));
+
+			var start = await this.CreateDocumentStart(stream);
+			var end = await this.CreateDocumentEnd(stream);
+
+			return await this.CreateDocument(start, end);
+		}
+
+		protected internal virtual async Task<IYamlDocument> CreateDocument(DocumentEnd implicitStart, IYamlStream stream)
+		{
+			if(implicitStart == null)
+				throw new ArgumentNullException(nameof(implicitStart));
+
+			if(stream == null)
+				throw new ArgumentNullException(nameof(stream));
+
+			var start = await this.CreateDocumentStart(implicitStart.Start, implicitStart.End);
+			var end = await this.CreateDocumentEnd(stream);
+
+			return await this.CreateDocument(start, end);
+		}
+
+		protected internal virtual async Task<IYamlDocument> CreateDocument(DocumentStart explicitStart, IYamlStream stream)
+		{
+			if(explicitStart == null)
+				throw new ArgumentNullException(nameof(explicitStart));
+
+			if(stream == null)
+				throw new ArgumentNullException(nameof(stream));
+
+			var start = await this.CreateDocumentStart(explicitStart);
+			var end = await this.CreateDocumentEnd(stream);
+
+			return await this.CreateDocument(start, end);
+		}
+
+		protected internal virtual async Task<IYamlDocument> CreateDocument(IYamlDocumentNotation start, IYamlDocumentNotation end)
+		{
+			if(start == null)
+				throw new ArgumentNullException(nameof(start));
+
+			if(end == null)
+				throw new ArgumentNullException(nameof(end));
+
+			await Task.CompletedTask;
+
+			return new YamlDocument(start, end);
+		}
+
+		protected internal virtual async Task<IYamlDocumentNotation> CreateDocumentEnd(IYamlStream stream)
+		{
+			if(stream == null)
+				throw new ArgumentNullException(nameof(stream));
+
+			return await this.CreateDocumentEnd(stream.End.Start, stream.End.End);
+		}
+
+		protected internal virtual async Task<IYamlDocumentNotation> CreateDocumentEnd(Mark start, Mark end)
+		{
+			if(start == null)
+				throw new ArgumentNullException(nameof(start));
+
+			if(end == null)
+				throw new ArgumentNullException(nameof(end));
+
+			await Task.CompletedTask;
+
+			return new YamlDocumentEnd(start, end);
+		}
+
+		protected internal virtual async Task<IDictionary<IYamlDocument, IList<Token>>> CreateDocumentMap(IYamlStream stream, IList<Token> tokens)
+		{
+			if(stream == null)
+				throw new ArgumentNullException(nameof(stream));
+
+			if(tokens == null)
+				throw new ArgumentNullException(nameof(tokens));
+
+			var map = new Dictionary<IYamlDocument, IList<Token>>();
+
+			if(!tokens.Any())
+				return map;
+
+			var document = await this.CreateDocument(stream);
+			var documentTokens = new List<Token>();
+			map.Add(document, documentTokens);
+
+			while(tokens.Count > 0)
+			{
+				var token = tokens[0];
+				tokens.RemoveAt(0);
+
+				switch(token)
 				{
-					case AnchorAlias anchorAlias:
+					case DocumentEnd end:
 					{
-						if(!parent.Sequence)
-							throw new InvalidOperationException("The parent for an anchor-alias must be a sequence.");
+						Comment? comment = null;
 
-						var node = await this.CreateNodeForAnchorAlias(anchorAlias, parsingEvents);
-						await this.TransferComments(comments, node);
-						await parent.Add(node);
-						break;
-					}
-					case Comment comment:
-					{
-						if(comment.IsInline)
-							throw new InvalidOperationException("Inline comment should have been handled earlier.");
+						// If the next token is an inline comment to the document-end.
+						if(this.TryConsumeInlineComment(tokens, out var inlineComment))
+							comment = inlineComment;
 
-						comments.Add(comment);
+						document.SetExplicitEnd(end, comment);
+
+						// If there are more tokens that are not comments.
+						if(tokens.Any(item => item is not Comment))
+						{
+							document = await this.CreateDocument(end, stream);
+							documentTokens = [];
+							map.Add(document, documentTokens);
+						}
 
 						break;
 					}
-					case DocumentEnd:
+					case DocumentStart start:
 					{
-						parent = root;
-						break;
-					}
-					case DocumentStart documentStart:
-					{
-						var node = await this.CreateNodeForDocumentStart(documentStart, parsingEvents);
-						await this.TransferComments(comments, node);
-						await parent.Add(node);
-						parent = node;
-						break;
-					}
-					case MappingEnd:
-					{
-						parent = parent.Parent ?? root;
-						break;
-					}
-					case MappingStart:
-					{
-						parent = root.Descendants().Last();
-						break;
-					}
-					case Scalar scalar:
-					{
-						var node = await this.CreateNodeForScalar(scalar, parsingEvents);
-						await this.TransferComments(comments, node);
-						await parent.Add(node);
-						break;
-					}
-					case SequenceEnd:
-					{
-						break;
-					}
-					case SequenceStart:
-					{
-						parent.Sequence = true;
+						Comment? comment = null;
+
+						// If the next token is an inline comment to the document-start.
+						if(this.TryConsumeInlineComment(tokens, out var inlineComment))
+							comment = inlineComment;
+
+						var documentHasContentTokens = documentTokens.Any(item => item is not Comment and not TagDirective and not VersionDirective);
+
+						if(document.Start.Explicit || document.End.Explicit || documentHasContentTokens)
+						{
+							if(!document.End.Explicit)
+								document.SetImplicitEnd(start);
+
+							document = await this.CreateDocument(start, stream);
+							document.Start.Comment = comment;
+							documentTokens = [];
+							map.Add(document, documentTokens);
+						}
+						else
+						{
+							document.SetExplicitStart(start, comment);
+						}
+
 						break;
 					}
 					default:
 					{
-						throw new InvalidOperationException($"Invalid parsing-event: {parsingEvent.GetType()}");
+						documentTokens.Add(token);
+
+						break;
 					}
 				}
 			}
 
-			root.Children.LastOrDefault()?.TrailingComments.AddRange(comments);
-
-			return root;
-		}
-
-		protected internal virtual async Task<IYamlNode> CreateNodeForAnchorAlias(AnchorAlias anchorAlias, IList<ParsingEvent> parsingEvents)
-		{
-			if(anchorAlias == null)
-				throw new ArgumentNullException(nameof(anchorAlias));
-
-			if(parsingEvents == null)
-				throw new ArgumentNullException(nameof(parsingEvents));
-
-			var node = await this.CreateAnchorAliasValueNode(anchorAlias);
-
-			var parsingEventsOnSameLine = await this.GetParsingEventsOnSameLine(anchorAlias, parsingEvents);
-
-			if(this.TryConsumeComment(parsingEvents, parsingEventsOnSameLine, out var comment))
-				node.Comment = comment;
-
-			if(parsingEventsOnSameLine.Count > 0)
-				this.ThrowInvalidParsingEventsOnSameLineException(parsingEventsOnSameLine);
-
-			return node;
-		}
-
-		protected internal virtual async Task<IYamlDocumentNode> CreateNodeForDocumentStart(DocumentStart documentStart, IList<ParsingEvent> parsingEvents)
-		{
-			if(documentStart == null)
-				throw new ArgumentNullException(nameof(documentStart));
-
-			if(parsingEvents == null)
-				throw new ArgumentNullException(nameof(parsingEvents));
-
-			var documentEnd = parsingEvents.OfType<DocumentEnd>().FirstOrDefault() ?? throw new InvalidOperationException("The document-end parsing-event is missing.");
-
-			var node = await this.CreateDocumentNode(documentStart, documentEnd);
-
-			await this.PopulateDocumentDirectives(documentStart, node);
-			await this.PopulateDirectiveComments(node.Directives, parsingEvents);
-			await this.PopulateDocumentComments(documentStart, documentEnd, node, parsingEvents);
-
-			return node;
-		}
-
-		protected internal virtual async Task<IYamlNode> CreateNodeForScalar(Scalar scalar, IList<ParsingEvent> parsingEvents)
-		{
-			if(scalar == null)
-				throw new ArgumentNullException(nameof(scalar));
-
-			if(parsingEvents == null)
-				throw new ArgumentNullException(nameof(parsingEvents));
-
-			var parsingEventsOnSameLine = await this.GetParsingEventsOnSameLine(scalar, parsingEvents);
-
-			this.TryConsumeComment(parsingEvents, parsingEventsOnSameLine, out var comment);
-
-			if(!scalar.IsKey)
-				return await this.CreateScalarValueNode(scalar, comment);
-
-			// When it is like this for example: "key: {value-1: null, value-2: null}" or "key: {value-1, value-2}"
-			var isInlineMappingValue = parsingEventsOnSameLine.FirstOrDefault() is MappingStart;
-			// When it is like this for example: "key: [value-1, value-2]"
-			var isInlineSequenceValue = parsingEventsOnSameLine.FirstOrDefault() is SequenceStart;
-
-			if(isInlineMappingValue || isInlineSequenceValue || !parsingEventsOnSameLine.Any())
-				return await this.CreateScalarKeyNode(scalar, comment);
-
-			if(this.TryConsumeAnchorAlias(parsingEvents, parsingEventsOnSameLine, out var anchorAliasValue))
-				return await this.CreateScalarKeyAnchorAliasValuePairNode(scalar, anchorAliasValue!, comment);
-
-			if(this.TryConsumeScalarValue(parsingEvents, parsingEventsOnSameLine, out var scalarValue))
-				return await this.CreateScalarKeyScalarValuePairNode(scalar, scalarValue!, comment);
-
-			return await this.CreateScalarKeyNode(scalar, comment);
-		}
-
-		protected internal virtual async Task<IYamlNode> CreateNodeForStream(IList<ParsingEvent> parsingEvents)
-		{
-			if(parsingEvents == null)
-				throw new ArgumentNullException(nameof(parsingEvents));
-
-			if(parsingEvents.Count < 2)
-				throw new ArgumentException("The parsing-events must contain at least a stream-start and a stream-end.", nameof(parsingEvents));
-
-			if(parsingEvents[0] is not StreamStart streamStart)
-				throw new ArgumentException("The first parsing-event must be a stream-start.", nameof(parsingEvents));
-
-			if(parsingEvents.Last() is not StreamEnd streamEnd)
-				throw new ArgumentException("The last parsing-event must be a stream-end.", nameof(parsingEvents));
-
-			parsingEvents.Remove(streamStart);
-			parsingEvents.Remove(streamEnd);
-
-			return await this.CreateStreamNode(streamStart, streamEnd);
-		}
-
-		protected internal virtual async Task<IList<ParsingEvent>> CreateParsingEvents(string value)
-		{
-			if(value == null)
-				throw new ArgumentNullException(nameof(value));
-
-			var parsingEvents = new List<ParsingEvent>();
-
-			using(var stringReader = new StringReader(value))
+			// Move certain trailing comments to the next document as leading comments.
+			for(var i = 0; i < map.Count - 1; i++)
 			{
-				var yamlDotNetParser = await this.CreateYamlDotNetParser(stringReader);
+				var mapping = map.ElementAt(i);
 
-				while(yamlDotNetParser.MoveNext())
+				if(!mapping.Key.Start.Explicit)
+					continue;
+
+				if(mapping.Key.End.Explicit)
+					continue;
+
+				var tokensAfterStart = mapping.Value.Where(token => token.Start.Line > mapping.Key.Start.Start.Line).Reverse().ToList();
+
+				foreach(var token in tokensAfterStart)
 				{
-					parsingEvents.Add(yamlDotNetParser.Current!);
+					if(token is not Comment { IsInline: false })
+						break;
+
+					mapping.Value.Remove(token);
+					map.ElementAt(i + 1).Value.Insert(0, token);
 				}
 			}
 
-			// Special case 1
-			if(await this.IsOnlyCommentsYaml(parsingEvents))
-				return await this.CreateParsingEvents($"--- # {this.InternalLeadingDocumentComment}{Environment.NewLine}{value}");
-
-			// Special case 2
-			if(parsingEvents.Last() is not StreamEnd)
-				return await this.CreateParsingEvents($"{value}{Environment.NewLine}--- # {this.InternalTrailingDocumentComment}");
-
-			return parsingEvents;
+			return map;
 		}
 
-		protected internal virtual async Task<IYamlNode> CreateScalarKeyAnchorAliasValuePairNode(Scalar key, AnchorAlias value, Comment? comment = null)
+		protected internal virtual async Task<IYamlDocumentNotation> CreateDocumentStart(DocumentStart start)
+		{
+			if(start == null)
+				throw new ArgumentNullException(nameof(start));
+
+			await Task.CompletedTask;
+
+			return new YamlDocumentStart(start);
+		}
+
+		protected internal virtual async Task<IYamlDocumentNotation> CreateDocumentStart(IYamlStream stream)
+		{
+			if(stream == null)
+				throw new ArgumentNullException(nameof(stream));
+
+			return await this.CreateDocumentStart(stream.Start.Start, stream.Start.End);
+		}
+
+		protected internal virtual async Task<IYamlDocumentNotation> CreateDocumentStart(Mark start, Mark end)
+		{
+			if(start == null)
+				throw new ArgumentNullException(nameof(start));
+
+			if(end == null)
+				throw new ArgumentNullException(nameof(end));
+
+			await Task.CompletedTask;
+
+			return new YamlDocumentStart(start, end);
+		}
+
+		protected internal virtual async Task<IYamlNode> CreateErrorNode(Error token)
 		{
 			await Task.CompletedTask;
 
-			return new YamlScalarKeyAnchorAliasValuePairNode(key, value)
-			{
-				Comment = comment
-			};
-		}
-
-		protected internal virtual async Task<IYamlNode> CreateScalarKeyNode(Scalar key, Comment? comment = null)
-		{
-			await Task.CompletedTask;
-
-			return new YamlScalarKeyNode(key)
-			{
-				Comment = comment
-			};
-		}
-
-		protected internal virtual async Task<IYamlNode> CreateScalarKeyScalarValuePairNode(Scalar key, Scalar value, Comment? comment = null)
-		{
-			await Task.CompletedTask;
-
-			return new YamlScalarKeyScalarValuePairNode(key, value)
-			{
-				Comment = comment
-			};
-		}
-
-		protected internal virtual async Task<IYamlNode> CreateScalarValueNode(Scalar value, Comment? comment = null)
-		{
-			await Task.CompletedTask;
-
-			return new YamlScalarValueNode(value)
-			{
-				Comment = comment
-			};
+			return new YamlErrorNode(token);
 		}
 
 		protected internal virtual async Task<IScanner> CreateScanner(TextReader textReader)
@@ -308,48 +351,62 @@ namespace HansKindberg.Text.Formatting.Yaml
 			return new Scanner(textReader, false);
 		}
 
-		protected internal virtual async Task<IYamlNode> CreateStreamNode(StreamStart start, StreamEnd end)
+		protected internal virtual async Task<IYamlNode> CreateSequenceItemNode()
 		{
 			await Task.CompletedTask;
 
-			return new YamlStreamNode(start, end);
+			return new YamlSequenceItemNode();
 		}
 
-		protected internal virtual async Task<IYamlDirective> CreateTagDirective(TagDirective tag)
+		protected internal virtual async Task<IYamlStream> CreateStream(IList<Token> tokens)
+		{
+			if(tokens == null)
+				throw new ArgumentNullException(nameof(tokens));
+
+			if(tokens.Count < 2)
+				throw new ArgumentException("The tokens must contain at least a stream-start and a stream-end.", nameof(tokens));
+
+			if(tokens[0] is not StreamStart streamStart)
+				throw new ArgumentException("The first token must be a stream-start.", nameof(tokens));
+
+			if(tokens.Last() is not StreamEnd streamEnd)
+				throw new ArgumentException("The last token must be a stream-end.", nameof(tokens));
+
+			tokens.Remove(streamStart);
+			tokens.Remove(streamEnd);
+
+			var stream = await this.CreateStream(streamStart, streamEnd);
+
+			await this.BuildStream(stream, tokens);
+
+			return stream;
+		}
+
+		protected internal virtual async Task<IYamlStream> CreateStream(Token start, Token end)
 		{
 			await Task.CompletedTask;
 
-			return new YamlTagDirective(tag);
+			return new YamlStream(start, end);
 		}
 
-		protected internal virtual async Task<IYamlDirective> CreateVersionDirective(VersionDirective version)
+		protected internal virtual async Task<IYamlDirective> CreateTagDirective(TagDirective tagDirective)
 		{
-			await Task.CompletedTask;
-
-			return new YamlVersionDirective(version);
-		}
-
-		protected internal virtual async Task<IYamlDotNetParser> CreateYamlDotNetParser(TextReader textReader)
-		{
-			return new Parser(await this.CreateScanner(textReader));
-		}
-
-		protected internal virtual string GetInvalidParsingEventsOnSameLineExceptionMessage(IList<ParsingEvent> parsingEvents)
-		{
-			return $"Invalid parsing-events on same line: {string.Join(", ", parsingEvents.Select(parsingEvent => parsingEvent.GetType()))}";
-		}
-
-		protected internal virtual async Task<IList<ParsingEvent>> GetParsingEventsOnSameLine(ParsingEvent parsingEvent, IList<ParsingEvent> parsingEvents)
-		{
-			if(parsingEvent == null)
-				throw new ArgumentNullException(nameof(parsingEvent));
-
-			if(parsingEvents == null)
-				throw new ArgumentNullException(nameof(parsingEvents));
+			if(tagDirective == null)
+				throw new ArgumentNullException(nameof(tagDirective));
 
 			await Task.CompletedTask;
 
-			return [.. parsingEvents.Where(item => parsingEvent.Start.Line == item.Start.Line)];
+			return new YamlTagDirective(tagDirective);
+		}
+
+		protected internal virtual async Task<IYamlDirective> CreateVersionDirective(VersionDirective versionDirective)
+		{
+			if(versionDirective == null)
+				throw new ArgumentNullException(nameof(versionDirective));
+
+			await Task.CompletedTask;
+
+			return new YamlVersionDirective(versionDirective);
 		}
 
 		protected internal virtual string GetStringRepresentation(string? value)
@@ -360,42 +417,58 @@ namespace HansKindberg.Text.Formatting.Yaml
 			return value.ToStringRepresentation();
 		}
 
-		/// <summary>
-		/// If the text contains only comments we will only get two parsing-events, a stream-start and a comment (the first one).
-		/// </summary>
-		protected internal virtual async Task<bool> IsOnlyCommentsYaml(IList<ParsingEvent> parsingEvents)
+		protected internal virtual async Task<bool> IsRelevantContentNodeToken(IList<Token> contentNodeTokens, Token token)
 		{
-			if(parsingEvents == null)
-				throw new ArgumentNullException(nameof(parsingEvents));
+			if(contentNodeTokens == null)
+				throw new ArgumentNullException(nameof(contentNodeTokens));
+
+			if(token == null)
+				throw new ArgumentNullException(nameof(token));
 
 			await Task.CompletedTask;
 
-			if(parsingEvents.Count != 2)
+			if(token is not (Anchor or AnchorAlias or Comment or Key or Scalar or Tag or Value))
 				return false;
 
-			if(parsingEvents[0] is not StreamStart)
+			if(token is Anchor && contentNodeTokens.OfType<Anchor>().Any())
 				return false;
 
-			if(parsingEvents[1] is not Comment)
+			if(token is AnchorAlias && contentNodeTokens.OfType<AnchorAlias>().Any())
+				return false;
+
+			if(token is Comment && contentNodeTokens.OfType<Comment>().Any())
+				return false;
+
+			if(token is Key && contentNodeTokens.OfType<Key>().Any())
+				return false;
+
+			if(token is Scalar { IsKey: false } && contentNodeTokens.OfType<Scalar>().Any(scalar => !scalar.IsKey))
+				return false;
+
+			if(token is Scalar { IsKey: true } && contentNodeTokens.OfType<Scalar>().Any(scalar => scalar.IsKey))
+				return false;
+
+			if(token is Tag && contentNodeTokens.OfType<Tag>().Any())
+				return false;
+
+			if(token is Value && contentNodeTokens.OfType<Value>().Any())
 				return false;
 
 			return true;
 		}
 
-		public virtual async Task<IYamlNode> Parse(string value)
+		public virtual async Task<IYamlStream> Parse(string value)
 		{
 			if(value == null)
 				throw new ArgumentNullException(nameof(value));
 
 			try
 			{
-				var parsingEvents = await this.CreateParsingEvents(value);
+				var tokens = await this.ParseToTokens(value);
 
-				await this.ResolveParsingEvents(parsingEvents);
+				var stream = await this.CreateStream(tokens);
 
-				var node = await this.CreateNode(parsingEvents);
-
-				return node;
+				return stream;
 			}
 			catch(Exception exception)
 			{
@@ -403,219 +476,400 @@ namespace HansKindberg.Text.Formatting.Yaml
 			}
 		}
 
-		protected internal virtual async Task PopulateDirectiveComments(IList<IYamlDirective> directives, IList<ParsingEvent> parsingEvents)
+		protected internal virtual async Task<IList<Token>> ParseToTokens(string value)
 		{
-			if(directives == null)
-				throw new ArgumentNullException(nameof(directives));
+			if(value == null)
+				throw new ArgumentNullException(nameof(value));
 
-			if(parsingEvents == null)
-				throw new ArgumentNullException(nameof(parsingEvents));
+			var tokens = new List<Token>();
+
+			using(var stringReader = new StringReader(value))
+			{
+				var scanner = await this.CreateScanner(stringReader);
+
+				while(scanner.MoveNext())
+				{
+					tokens.Add(scanner.Current!);
+				}
+			}
+
+			await this.CorrectTokens(tokens);
+
+			await this.SortTokens(tokens);
+
+			await this.ResolveInlineComments(tokens);
+
+			return tokens;
+		}
+
+		protected internal virtual async Task PopulateDocument(IYamlDocument document, IList<Token> tokens)
+		{
+			if(document == null)
+				throw new ArgumentNullException(nameof(document));
+
+			await this.PopulateDocumentLeadingTokens(document, tokens);
+			await this.PopulateDocumentTrailingComments(document, tokens);
+			await this.PopulateDocumentTree(document, tokens);
+		}
+
+		protected internal virtual async Task PopulateDocumentLeadingTokens(IYamlDocument document, IList<Token> tokens)
+		{
+			if(document == null)
+				throw new ArgumentNullException(nameof(document));
+
+			if(tokens == null)
+				throw new ArgumentNullException(nameof(tokens));
 
 			await Task.CompletedTask;
 
-			foreach(var directive in directives)
-			{
-				var comment = parsingEvents.OfType<Comment>().FirstOrDefault(item => item.Start.Line == directive.Start.Line);
+			var leadingTokens = tokens.Where(token => token.Start.Line < document.Start.Start.Line).ToList();
 
-				if(comment == null)
-					continue;
+			while(leadingTokens.Count > 0)
+			{
+				var leadingToken = leadingTokens[0];
+				leadingTokens.RemoveAt(0);
+				tokens.Remove(leadingToken);
+
+				switch(leadingToken)
+				{
+					case Comment { IsInline: true }:
+					{
+						throw new InvalidOperationException($"The leading token {leadingToken} can not be an inline comment.");
+					}
+					case Comment comment:
+					{
+						document.LeadingComments.Add(comment);
+
+						break;
+					}
+					case TagDirective or VersionDirective:
+					{
+						var directive = leadingToken is TagDirective tagDirective ? await this.CreateTagDirective(tagDirective) : await this.CreateVersionDirective((VersionDirective)leadingToken);
+
+						if(this.TryConsumeInlineComment(leadingTokens, out var comment))
+						{
+							directive.Comment = comment;
+							tokens.Remove(comment!);
+						}
+
+						document.Directives.Add(directive);
+
+						break;
+					}
+					default:
+					{
+						throw new InvalidOperationException($"The leading token {leadingToken} must be a comment, tag-directive or version-directive.");
+					}
+				}
+			}
+		}
+
+		protected internal virtual async Task PopulateDocumentTrailingComments(IYamlDocument document, IList<Token> tokens)
+		{
+			if(document == null)
+				throw new ArgumentNullException(nameof(document));
+
+			if(tokens == null)
+				throw new ArgumentNullException(nameof(tokens));
+
+			await Task.CompletedTask;
+
+			var trailingTokens = tokens.Where(token => token.Start.Line > document.End.Start.Line).ToList();
+
+			foreach(var trailingToken in trailingTokens)
+			{
+				if(trailingToken is not Comment comment)
+					throw new InvalidOperationException($"The trailing token {trailingToken} must be a comment.");
 
 				if(comment.IsInline)
-					continue;
+					throw new InvalidOperationException($"The trailing token {trailingToken} can not be an inline comment.");
 
-				directive.Comment = comment;
+				document.TrailingComments.Add(comment);
 
-				parsingEvents.Remove(comment);
+				tokens.Remove(trailingToken);
 			}
 		}
 
-		protected internal virtual async Task PopulateDocumentComments(DocumentStart documentStart, DocumentEnd documentEnd, IYamlDocumentNode node, IList<ParsingEvent> parsingEvents)
+		protected internal virtual async Task PopulateDocumentTree(IYamlDocument document, IList<Token> tokens)
 		{
-			if(documentStart == null)
-				throw new ArgumentNullException(nameof(documentStart));
+			if(document == null)
+				throw new ArgumentNullException(nameof(document));
 
-			if(documentEnd == null)
-				throw new ArgumentNullException(nameof(documentEnd));
+			if(tokens == null)
+				throw new ArgumentNullException(nameof(tokens));
 
-			if(node == null)
-				throw new ArgumentNullException(nameof(node));
+			if(!tokens.Any())
+				return;
 
-			if(parsingEvents == null)
-				throw new ArgumentNullException(nameof(parsingEvents));
+			var blockStack = new Stack<Token>();
+			var comments = new List<Comment>();
+			var root = new YamlContentNode();
+			IYamlNode node = root;
+			IYamlNode parent = root;
+
+			while(tokens.Count > 0)
+			{
+				var token = tokens[0];
+				tokens.RemoveAt(0);
+
+				switch(token)
+				{
+					case BlockEnd:
+					{
+						var start = blockStack.Pop();
+
+						if(start is not BlockSequenceStart)
+							parent = parent.Parent!;
+
+						break;
+					}
+					case BlockEntry:
+					{
+						node = await this.CreateSequenceItemNode();
+						await parent.Add(node);
+						parent = node;
+
+						break;
+					}
+					case BlockMappingStart blockMappingStart:
+					{
+						blockStack.Push(blockMappingStart);
+
+						parent = node;
+
+						break;
+					}
+					case BlockSequenceStart blockSequenceStart:
+					{
+						// We do not create any node here, instead we do it with BlockEntry.
+
+						blockStack.Push(blockSequenceStart);
+
+						break;
+					}
+					case Comment comment:
+					{
+						if(comment.IsInline)
+						{
+#pragma warning disable IDE0045 // Convert to conditional expression
+							// If the yaml contains flow (json) syntax, especially on the same line, inline comments can be left alone and must be handled afterward.
+							if(root.Descendants().LastOrDefault() is IYamlContentNode { Comment: null } lastContentNode)
+								lastContentNode.Comment = comment;
+							else
+								throw new InvalidOperationException("Inline comment should have been handled earlier.");
+#pragma warning restore IDE0045 // Convert to conditional expression
+						}
+						else
+						{
+							comments.Add(comment);
+						}
+
+						break;
+					}
+					case Error error:
+					{
+						node = await this.CreateErrorNode(error);
+
+						await parent.Add(node);
+
+						break;
+					}
+					case FlowEntry:
+					{
+						node = await this.CreateSequenceItemNode();
+						node.Flow = true;
+						await parent.Add(node);
+						parent = node;
+
+						break;
+					}
+					case FlowMappingEnd:
+					{
+						parent = parent.Parent!;
+
+						break;
+					}
+					case FlowMappingStart:
+					{
+						node.Flow = true;
+						parent = node;
+
+						break;
+					}
+					case FlowSequenceEnd:
+					{
+						parent = parent.Parent!;
+
+						break;
+					}
+					case FlowSequenceStart:
+					{
+						// We do nothing here, instead we do it with FlowEntry.
+
+						break;
+					}
+					case Anchor:
+					case AnchorAlias:
+					case Key:
+					case Scalar:
+					case Tag:
+					case Value:
+					{
+						var followingTokensOnSameLine = tokens.Where(item => item.Start.Line == token.Start.Line).ToList();
+
+						var contentNodeTokens = new List<Token> { token };
+
+						foreach(var tokenOnSameLine in followingTokensOnSameLine)
+						{
+							if(!await this.IsRelevantContentNodeToken(contentNodeTokens, tokenOnSameLine))
+								break;
+
+							contentNodeTokens.Add(tokenOnSameLine);
+							tokens.Remove(tokenOnSameLine);
+						}
+
+						node = await this.CreateContentNode(contentNodeTokens);
+
+						node.LeadingComments.AddRange(comments);
+						comments.Clear();
+
+						await parent.Add(node);
+
+						break;
+					}
+					default:
+					{
+						throw new InvalidOperationException($"Invalid token: {token.GetType()}");
+					}
+				}
+			}
+
+			if(comments.Any())
+			{
+				var lastDescendant = root.Descendants().LastOrDefault();
+
+				if(lastDescendant != null)
+				{
+					lastDescendant.TrailingComments.AddRange(comments);
+				}
+				else
+				{
+					foreach(var comment in comments)
+					{
+						node = await this.CreateContentNode([new Comment(comment.Value, true, comment.Start, comment.End)]);
+						await root.Add(node);
+					}
+				}
+
+				comments.Clear();
+			}
+
+			foreach(var child in root.Children)
+			{
+				await document.Add(child);
+			}
+		}
+
+		protected internal virtual async Task RemoveInvalidFlowEntries(IList<Token> tokens)
+		{
+			if(tokens == null)
+				throw new ArgumentNullException(nameof(tokens));
 
 			await Task.CompletedTask;
 
-			if(!documentStart.IsImplicit)
+			var flowStack = new Stack<Token>();
+
+			for(var i = 0; i < tokens.Count; i++)
 			{
-				var commentsBeforeDocumentStart = parsingEvents.Where(parsingEvent => parsingEvent.Start.Line < documentStart.Start.Line).OfType<Comment>().ToList();
-				node.LeadingComments.AddRange(commentsBeforeDocumentStart);
+				var token = tokens[i];
 
-				foreach(var commentBeforeDocumentStart in commentsBeforeDocumentStart)
+				if(token is FlowMappingStart or FlowSequenceStart)
 				{
-					parsingEvents.Remove(commentBeforeDocumentStart);
-				}
-
-				var documentStartComment = parsingEvents.OfType<Comment>().FirstOrDefault(comment => comment.Start.Line == documentStart.End.Line);
-				if(documentStartComment != null)
-				{
-					node.Comment = documentStartComment;
-					parsingEvents.Remove(documentStartComment);
-				}
-			}
-
-			if(documentEnd.IsImplicit)
-				return;
-
-			var documentEndComment = parsingEvents.OfType<Comment>().FirstOrDefault(comment => comment.Start.Line == documentEnd.Start.Line);
-			if(documentEndComment != null)
-			{
-				node.EndComment = documentEndComment;
-				parsingEvents.Remove(documentEndComment);
-			}
-		}
-
-		protected internal virtual async Task PopulateDocumentDirectives(DocumentStart documentStart, IYamlDocumentNode node)
-		{
-			if(documentStart == null)
-				throw new ArgumentNullException(nameof(documentStart));
-
-			if(node == null)
-				throw new ArgumentNullException(nameof(node));
-
-			if(documentStart.Version != null)
-				node.Directives.Add(await this.CreateVersionDirective(documentStart.Version));
-
-			if(documentStart.Tags != null)
-			{
-				foreach(var tag in documentStart.Tags)
-				{
-					if(tag.IsDefault())
-						continue;
-
-					node.Directives.Add(await this.CreateTagDirective(tag));
-				}
-			}
-		}
-
-		protected internal virtual async Task ResolveParsingEvents(IList<ParsingEvent> parsingEvents)
-		{
-			if(parsingEvents == null)
-				throw new ArgumentNullException(nameof(parsingEvents));
-
-			await Task.CompletedTask;
-
-			var internalLeadingDocumentCommentExists = false;
-			var internalTrailingDocumentCommentExists = false;
-
-			for(var i = parsingEvents.Count - 1; i >= 0; i--)
-			{
-				if(parsingEvents[i] is Comment leadingComment && string.Equals(leadingComment.Value, this.InternalLeadingDocumentComment, StringComparison.OrdinalIgnoreCase))
-				{
-					parsingEvents.RemoveAt(i);
-					internalLeadingDocumentCommentExists = true;
+					flowStack.Push(token);
 					continue;
 				}
 
-				if(parsingEvents[i] is Comment trailingComment && string.Equals(trailingComment.Value, this.InternalTrailingDocumentComment, StringComparison.OrdinalIgnoreCase))
+				if(token is FlowMappingEnd && flowStack.Peek() is FlowMappingStart)
 				{
-					parsingEvents.RemoveAt(i);
-					internalTrailingDocumentCommentExists = true;
+					flowStack.Pop();
 					continue;
 				}
 
-				if(parsingEvents[i] is Scalar scalar && scalar.IsEmpty())
+				if(token is FlowSequenceEnd && flowStack.Peek() is FlowSequenceStart)
 				{
-					parsingEvents.RemoveAt(i);
+					flowStack.Pop();
+					continue;
 				}
+
+				if(token is not FlowEntry)
+					continue;
+
+				if(flowStack.Peek() is FlowSequenceStart)
+					continue;
+
+				tokens.RemoveAt(i);
+				i--;
 			}
-
-			if(internalLeadingDocumentCommentExists)
-				parsingEvents[1] = new DocumentStart(); // Make the first document-start, that was added internally, to be implicit.
-
-			if(!internalTrailingDocumentCommentExists)
-				return;
-
-			parsingEvents.Remove(parsingEvents.OfType<DocumentEnd>().Last()); // Remove the last document-end that was added internally.
-			parsingEvents.Remove(parsingEvents.OfType<DocumentStart>().Last()); // Remove the last document-start that was added internally.
-		}
-
-		protected internal virtual void ThrowInvalidParsingEventsOnSameLineException(IList<ParsingEvent> parsingEvents)
-		{
-			throw new InvalidOperationException(this.GetInvalidParsingEventsOnSameLineExceptionMessage(parsingEvents));
-		}
-
-		protected internal virtual async Task TransferComments(IList<Comment> comments, IYamlNode node)
-		{
-			if(comments == null)
-				throw new ArgumentNullException(nameof(comments));
-
-			if(node == null)
-				throw new ArgumentNullException(nameof(node));
-
-			await Task.CompletedTask;
-
-			if(!comments.Any())
-				return;
-
-			node.LeadingComments.AddRange(comments);
-			comments.Clear();
-		}
-
-		protected internal virtual bool TryConsumeAnchorAlias(IList<ParsingEvent> parsingEvents, IList<ParsingEvent> parsingEventsOnSameLine, out AnchorAlias? anchorAlias)
-		{
-			if(parsingEvents == null)
-				throw new ArgumentNullException(nameof(parsingEvents));
-
-			if(parsingEventsOnSameLine == null)
-				throw new ArgumentNullException(nameof(parsingEventsOnSameLine));
-
-			anchorAlias = parsingEventsOnSameLine.FirstOrDefault() as AnchorAlias;
-
-			if(anchorAlias == null)
-				return false;
-
-			this.ConsumeParsingEvents(parsingEvents, parsingEventsOnSameLine, anchorAlias);
-
-			return true;
 		}
 
 		/// <summary>
-		/// Try to consume the last parsing-event on the same line as an inline comment.
+		/// Make inline comments, that are not, to inline comments.
 		/// </summary>
-		protected internal virtual bool TryConsumeComment(IList<ParsingEvent> parsingEvents, IList<ParsingEvent> parsingEventsOnSameLine, out Comment? comment)
+		protected internal virtual async Task ResolveInlineComments(IList<Token> tokens)
 		{
-			if(parsingEvents == null)
-				throw new ArgumentNullException(nameof(parsingEvents));
+			if(tokens == null)
+				throw new ArgumentNullException(nameof(tokens));
 
-			if(parsingEventsOnSameLine == null)
-				throw new ArgumentNullException(nameof(parsingEventsOnSameLine));
+			await Task.CompletedTask;
 
-			comment = parsingEventsOnSameLine.LastOrDefault() as Comment;
+			var standaloneComments = tokens.OfType<Comment>().Where(comment => !comment.IsInline).ToList();
 
-			if(comment is not { IsInline: true })
-				return false;
+			var inlineCommentsToResolve = new Dictionary<Comment, Comment>();
 
-			this.ConsumeParsingEvents(parsingEvents, parsingEventsOnSameLine, comment);
+			foreach(var standaloneComment in standaloneComments)
+			{
+				if(!tokens.Any(token => token is not Comment && token.Start.Line == standaloneComment.Start.Line && token.Start.Column < standaloneComment.Start.Column))
+					continue;
 
-			return true;
+				inlineCommentsToResolve.Add(standaloneComment, new Comment(standaloneComment.Value, true, standaloneComment.Start, standaloneComment.End));
+			}
+
+			foreach(var entry in inlineCommentsToResolve)
+			{
+				var index = tokens.IndexOf(entry.Key);
+				tokens[index] = entry.Value;
+			}
 		}
 
-		protected internal virtual bool TryConsumeScalarValue(IList<ParsingEvent> parsingEvents, IList<ParsingEvent> parsingEventsOnSameLine, out Scalar? scalar)
+		protected internal virtual async Task SortTokens(IList<Token> tokens)
 		{
-			if(parsingEvents == null)
-				throw new ArgumentNullException(nameof(parsingEvents));
+			if(tokens == null)
+				throw new ArgumentNullException(nameof(tokens));
 
-			if(parsingEventsOnSameLine == null)
-				throw new ArgumentNullException(nameof(parsingEventsOnSameLine));
+			await Task.CompletedTask;
 
-			scalar = parsingEventsOnSameLine.FirstOrDefault() as Scalar;
+			// We need a stable sort. That is, the original order of the tokens must not change if they are considered equal.
+			// Linq's OrderBy has a stable sort, List<T>.Sort() has not.
+			var sortedTokens = tokens.OrderBy(token => token.Start.Line).ThenBy(token => token.Start.Column).ToList();
+			tokens.Clear();
+			tokens.AddRange(sortedTokens);
+		}
 
-			if(scalar is { IsKey: true })
-				return false;
+		protected internal virtual bool TryConsumeInlineComment(IList<Token> tokens, out Comment? comment)
+		{
+			if(tokens == null)
+				throw new ArgumentNullException(nameof(tokens));
 
-			this.ConsumeParsingEvents(parsingEvents, parsingEventsOnSameLine, scalar!);
+			if(tokens.Any() && tokens[0] is Comment { IsInline: true } inlineComment)
+			{
+				comment = inlineComment;
+				tokens.RemoveAt(0);
+				return true;
+			}
 
-			return true;
+			comment = null;
+
+			return false;
 		}
 
 		#endregion

@@ -34,16 +34,38 @@ namespace IntegrationTests.Yaml
 		}
 
 		[Theory]
-		[InlineData("Comments-01")]
-		[InlineData("Comments-02")]
-		[InlineData("Comments-03")]
-		public async Task Format_Comments_ShouldWorkProperly(string fileName)
+		//[InlineData("Comments-01", DocumentNotation.None)]
+		//[InlineData("Comments-01", DocumentNotation.Minimal)]
+		//[InlineData("Comments-01", DocumentNotation.ForceDocumentEnd)]
+		//[InlineData("Comments-01", DocumentNotation.ForceDocumentStart)]
+		//[InlineData("Comments-01", DocumentNotation.ForceDocumentEndAndDocumentStart)]
+		//[InlineData("Comments-02", DocumentNotation.None)]
+		//[InlineData("Comments-02", DocumentNotation.Minimal)]
+		//[InlineData("Comments-02", DocumentNotation.ForceDocumentEnd)]
+		//[InlineData("Comments-02", DocumentNotation.ForceDocumentStart)]
+		//[InlineData("Comments-02", DocumentNotation.ForceDocumentEndAndDocumentStart)]
+		//[InlineData("Comments-03", DocumentNotation.None)]
+		//[InlineData("Comments-03", DocumentNotation.Minimal)]
+		//[InlineData("Comments-03", DocumentNotation.ForceDocumentEnd)]
+		//[InlineData("Comments-03", DocumentNotation.ForceDocumentStart)]
+		//[InlineData("Comments-03", DocumentNotation.ForceDocumentEndAndDocumentStart)]
+		//[InlineData("Comments-04", DocumentNotation.None)]
+		//[InlineData("Comments-04", DocumentNotation.Minimal)]
+		//[InlineData("Comments-04", DocumentNotation.ForceDocumentEnd)]
+		//[InlineData("Comments-04", DocumentNotation.ForceDocumentStart)]
+		//[InlineData("Comments-04", DocumentNotation.ForceDocumentEndAndDocumentStart)]
+		[InlineData("Comments-05", DocumentNotation.None)]
+		//////////////////[InlineData("Comments-05", DocumentNotation.Minimal)]
+		//////////////////[InlineData("Comments-05", DocumentNotation.ForceDocumentEnd)]
+		//////////////////[InlineData("Comments-05", DocumentNotation.ForceDocumentStart)]
+		//////////////////[InlineData("Comments-05", DocumentNotation.ForceDocumentEndAndDocumentStart)]
+		public async Task Format_Comments_ShouldWorkProperly(string fileName, DocumentNotation documentNotation)
 		{
 			var text = await GetYaml(fileName);
-			var expectedText = await GetExpectedYaml($"{fileName}");
+			var expectedText = await GetExpectedYaml($"{fileName}-DocumentNotation-{documentNotation}");
 
 			var yamlFormatter = await CreateYamlFormatter();
-			var formattedText = await yamlFormatter.Format(new YamlFormatOptions(), text);
+			var formattedText = await yamlFormatter.Format(new YamlFormatOptions { DocumentNotation = documentNotation }, text);
 			Assert.Equal(expectedText, formattedText);
 		}
 

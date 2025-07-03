@@ -48,8 +48,10 @@ namespace HansKindberg.Text.Formatting.Yaml.Configuration
 
 		public char Space { get; set; } = ' ';
 		public string StartOfDocument { get; set; } = "---";
+		public string TagDirectivePrefix { get; set; } = "%TAG";
 		public char TagPrefix { get; set; } = '!';
 		public Quotation? ValueQuotation { get; set; }
+		public string VersionDirectivePrefix { get; set; } = "%YAML";
 
 		#endregion
 	}

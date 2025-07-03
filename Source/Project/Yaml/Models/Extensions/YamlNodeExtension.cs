@@ -20,38 +20,6 @@ namespace HansKindberg.Text.Formatting.Yaml.Models.Extensions
 			}
 		}
 
-		public static bool IsFirstChild(this IYamlNode node)
-		{
-			if(node == null)
-				throw new ArgumentNullException(nameof(node));
-
-			if(node.Parent == null)
-				return false;
-
-			if(!node.Parent.Children.Any())
-				return false;
-
-			var firstChild = node.Parent.Children.FirstOrDefault();
-
-			return ReferenceEquals(firstChild, node);
-		}
-
-		public static bool IsLastChild(this IYamlNode node)
-		{
-			if(node == null)
-				throw new ArgumentNullException(nameof(node));
-
-			if(node.Parent == null)
-				return false;
-
-			if(!node.Parent.Children.Any())
-				return false;
-
-			var lastChild = node.Parent.Children.LastOrDefault();
-
-			return ReferenceEquals(lastChild, node);
-		}
-
 		#endregion
 	}
 }

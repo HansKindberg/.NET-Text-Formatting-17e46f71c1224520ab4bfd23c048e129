@@ -7,23 +7,23 @@ using YamlDotNet.Serialization.NamingConventions;
 namespace HansKindberg.Text.Formatting.Yaml
 {
 	/// <inheritdoc />
-	public class YamlFormatter(IParser<IYamlNode> parser) : ITextFormatter<YamlFormatOptions>
+	public class YamlFormatter(IParser<IYamlStream> parser) : ITextFormatter<YamlFormatOptions>
 	{
 		#region Properties
 
-		protected internal virtual IParser<IYamlNode> Parser { get; } = parser ?? throw new ArgumentNullException(nameof(parser));
+		protected internal virtual IParser<IYamlStream> Parser { get; } = parser ?? throw new ArgumentNullException(nameof(parser));
 
 		#endregion
 
 		#region Methods
 
-		protected internal virtual async Task ApplyNamingConvention(IYamlNode node, YamlFormatOptions options)
+		protected internal virtual async Task ApplyNamingConvention(YamlFormatOptions options, IYamlStream stream)
 		{
-			if(node == null)
-				throw new ArgumentNullException(nameof(node));
-
 			if(options == null)
 				throw new ArgumentNullException(nameof(options));
+
+			if(stream == null)
+				throw new ArgumentNullException(nameof(stream));
 
 			if(options.NamingConvention == null)
 				return;
@@ -33,18 +33,18 @@ namespace HansKindberg.Text.Formatting.Yaml
 			if(namingConvention == null)
 				return;
 
-			await node.ApplyNamingConvention(namingConvention);
+			await stream.ApplyNamingConvention(namingConvention);
 		}
 
-		protected internal virtual async Task<IComparer<IYamlNode>> CreateYamlNodeComparer(YamlFormatOptions options)
-		{
-			if(options == null)
-				throw new ArgumentNullException(nameof(options));
+		//////////////////protected internal virtual async Task<IComparer<IYamlNode>> CreateYamlNodeComparer(YamlFormatOptions options)
+		//////////////////{
+		//////////////////	if(options == null)
+		//////////////////		throw new ArgumentNullException(nameof(options));
 
-			await Task.CompletedTask;
+		//////////////////	await Task.CompletedTask;
 
-			return new YamlNodeComparer(options);
-		}
+		//////////////////	return new YamlNodeComparer(options);
+		//////////////////}
 
 		public virtual async Task<string> Format(YamlFormatOptions options, string text)
 		{
@@ -54,16 +54,16 @@ namespace HansKindberg.Text.Formatting.Yaml
 			if(text == null)
 				throw new ArgumentNullException(nameof(text));
 
-			var node = await this.Parser.Parse(text);
+			var stream = await this.Parser.Parse(text);
 
-			if(!node.Children.Any())
+			if(!stream.Documents.Any())
 				return string.Empty;
 
-			await this.ApplyNamingConvention(node, options);
+			await this.ApplyNamingConvention(options, stream);
 
-			await this.Sort(node, options);
+			await this.Sort(options, stream);
 
-			var value = await this.GetText(node, options);
+			var value = await this.GetText(options, stream);
 
 			return value;
 		}
@@ -86,35 +86,37 @@ namespace HansKindberg.Text.Formatting.Yaml
 			};
 		}
 
-		protected internal virtual async Task<string> GetText(IYamlNode node, YamlFormatOptions options)
+		protected internal virtual async Task<string> GetText(YamlFormatOptions options, IYamlStream stream)
 		{
-			if(node == null)
-				throw new ArgumentNullException(nameof(node));
-
 			if(options == null)
 				throw new ArgumentNullException(nameof(options));
 
+			if(stream == null)
+				throw new ArgumentNullException(nameof(stream));
+
 			var lines = new List<string>();
 
-			await node.Write(lines, options);
+			await stream.Write(lines, options);
 
 			return string.Join(options.NewLine, lines).Trim();
 		}
 
-		protected internal virtual async Task Sort(IYamlNode node, YamlFormatOptions options)
+		protected internal virtual async Task Sort(YamlFormatOptions options, IYamlStream stream)
 		{
-			if(node == null)
-				throw new ArgumentNullException(nameof(node));
-
 			if(options == null)
 				throw new ArgumentNullException(nameof(options));
+
+			if(stream == null)
+				throw new ArgumentNullException(nameof(stream));
 
 			if(!options.DocumentSorting.Enabled && !options.ScalarSorting.Enabled && !options.SequenceSorting.Enabled)
 				return;
 
-			var comparer = await this.CreateYamlNodeComparer(options);
+			await Task.CompletedTask;
 
-			await node.Sort(comparer);
+			//////////var comparer = await this.CreateYamlNodeComparer(options);
+
+			//////////await stream.Sort(comparer);
 		}
 
 		#endregion

@@ -1,15 +1,17 @@
 using YamlDotNet.Core;
-using YamlDotNet.Core.Events;
+using YamlDotNet.Core.Tokens;
 
 namespace HansKindberg.Text.Formatting.Yaml.Models
 {
-	public abstract class YamlDirective : IYamlDirective
+	/// <inheritdoc cref="IYamlDirective" />
+	public abstract class YamlDirective<TDirective>(TDirective directive) : IYamlDirective where TDirective : Token
 	{
 		#region Properties
 
 		public virtual Comment? Comment { get; set; }
-		public abstract Mark End { get; }
-		public abstract Mark Start { get; }
+		public virtual TDirective Directive { get; } = directive ?? throw new ArgumentNullException(nameof(directive));
+		public virtual Mark End => this.Directive.End;
+		public virtual Mark Start => this.Directive.Start;
 
 		#endregion
 	}
