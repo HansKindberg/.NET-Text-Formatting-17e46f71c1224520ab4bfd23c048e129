@@ -27,6 +27,19 @@ namespace YamlDotNetTests.Core
 		}
 
 		[Theory]
+		[InlineData("BlockSequence-01", 1, 3)]
+		[InlineData("BlockSequence-02", 0, 3)] // I expect a BlockSequenceStart token here.
+		public async Task BlockSequence_Test(string fileName, int expectedNumberOfBlockSequenceStart, int expectedNumberOfBlockEntry)
+		{
+			await Task.CompletedTask;
+
+			var tokens = await GetTokens(fileName);
+
+			Assert.Equal(expectedNumberOfBlockSequenceStart, tokens.Count(token => token is BlockSequenceStart));
+			Assert.Equal(expectedNumberOfBlockEntry, tokens.Count(token => token is BlockEntry));
+		}
+
+		[Theory]
 		[InlineData("FlowEntries-01", 2)]
 		[InlineData("FlowEntries-02", 2)]
 		[InlineData("FlowEntries-03", 2)]

@@ -1,0 +1,6 @@
+a:
+- item-1
+- item-2:
+      aa: bb
+      cc: dd
+- item-3
