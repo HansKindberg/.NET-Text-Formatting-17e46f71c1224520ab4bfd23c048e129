@@ -58,7 +58,8 @@ namespace IntegrationTests.Yaml
 		[InlineData("Yaml-16", "26")]
 		[InlineData("Yaml-17", "10")]
 		[InlineData("Yaml-18", "27")]
-		[InlineData("Yaml-20", "124,143,76")]
+		[InlineData("Yaml-19", "13")]
+		[InlineData("Yaml-50", "124,143,76")]
 		public async Task CreateDocumentMap_ShouldWorkProperly(string fileName, string expectedResult)
 		{
 			var value = await GetYaml(fileName);
@@ -123,7 +124,8 @@ namespace IntegrationTests.Yaml
 		[InlineData("Yaml-16", "false,false,0,0,0,6")]
 		[InlineData("Yaml-17", "false,false,0,0,0,6")]
 		[InlineData("Yaml-18", "false,false,0,0,0,6")]
-		[InlineData("Yaml-20", "true,false,2,1,0,30;true,false,0,0,0,35;true,false,0,0,0,18")]
+		[InlineData("Yaml-19", "false,false,0,0,0,6")]
+		[InlineData("Yaml-50", "true,false,2,1,0,30;true,false,0,0,0,35;true,false,0,0,0,18")]
 		public async Task CreateStream_RegardingTheStructure_ShouldWorkProperly(string fileName, string expectedResult)
 		{
 			var value = await GetYaml(fileName);
@@ -195,7 +197,8 @@ namespace IntegrationTests.Yaml
 		[InlineData("Yaml-16", 1)]
 		[InlineData("Yaml-17", 1)]
 		[InlineData("Yaml-18", 1)]
-		[InlineData("Yaml-20", 3)]
+		[InlineData("Yaml-19", 1)]
+		[InlineData("Yaml-50", 3)]
 		public async Task CreateStream_ShouldWorkProperly(string fileName, int expectedNumberOfDocuments)
 		{
 			var value = await GetYaml(fileName);
@@ -374,7 +377,8 @@ namespace IntegrationTests.Yaml
 		[InlineData("Yaml-16", 1, 0, 0, 6)]
 		[InlineData("Yaml-17", 1, 0, 0, 6)]
 		[InlineData("Yaml-18", 1, 0, 0, 6)]
-		[InlineData("Yaml-20", 3, 2, 1, 83)]
+		[InlineData("Yaml-19", 1, 0, 0, 6)]
+		[InlineData("Yaml-50", 3, 2, 1, 83)]
 		public async Task Parse_ShouldWorkProperly(string fileName, int expectedNumberOfDocuments, int expectedNumberOfDirectives, int expectedNumberOfSurroundingComments, int expectedNumberOfDescendants)
 		{
 			var value = await GetYaml(fileName);
@@ -485,7 +489,8 @@ namespace IntegrationTests.Yaml
 		[InlineData("Yaml-16", 28)]
 		[InlineData("Yaml-17", 12)]
 		[InlineData("Yaml-18", 29)]
-		[InlineData("Yaml-20", 348)]
+		[InlineData("Yaml-19", 15)]
+		[InlineData("Yaml-50", 348)]
 		public async Task ParseToTokens_ShouldWorkProperly(string fileName, int expectedNumberOfTokens)
 		{
 			var value = await GetYaml(fileName);
