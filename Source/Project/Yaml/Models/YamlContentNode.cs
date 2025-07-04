@@ -1,4 +1,5 @@
 using HansKindberg.Text.Formatting.Yaml.Configuration;
+using YamlDotNet.Core;
 using YamlDotNet.Core.Tokens;
 
 namespace HansKindberg.Text.Formatting.Yaml.Models
@@ -47,6 +48,38 @@ namespace HansKindberg.Text.Formatting.Yaml.Models
 
 		#region Methods
 
+		protected internal virtual string DoubleQuoted(string text)
+		{
+			return $"\"{text}\"";
+		}
+
+		protected internal virtual string GetScalarText(Quotation? quotation, Scalar scalar)
+		{
+			if(scalar == null)
+				throw new ArgumentNullException(nameof(scalar));
+
+			var text = scalar.Value;
+
+			if(quotation != null)
+				return text;
+
+			return quotation switch
+			{
+#pragma warning disable IDE0072 // Add missing cases
+				null => scalar.Style switch
+				{
+					ScalarStyle.DoubleQuoted => this.DoubleQuoted(text),
+					ScalarStyle.SingleQuoted => this.SingleQuoted(text),
+					_ => text
+				},
+#pragma warning restore IDE0072 // Add missing cases
+				Quotation.Clear => text,
+				Quotation.Double => this.DoubleQuoted(text),
+				Quotation.Single => this.SingleQuoted(text),
+				_ => text
+			};
+		}
+
 		protected internal override IList<string> GetTextPartsExceptComment(YamlFormatOptions options)
 		{
 			if(options == null)
@@ -54,31 +87,42 @@ namespace HansKindberg.Text.Formatting.Yaml.Models
 
 			var parts = new List<string>();
 
-			//	var key = this.GetKey(options.KeyQuotation);
-			//	if(!string.IsNullOrWhiteSpace(key))
-			//		parts.Add($"{key}{options.KeySuffix}");
+			if(this.Key != null)
+			{
+				var key = this.GetScalarText(options.KeyQuotation, this.Key);
+				parts.Add($"{key}{options.KeySuffix}");
+			}
 
-			//	var tag = this.GetTag();
-			//	if(!string.IsNullOrWhiteSpace(tag))
-			//		parts.Add($"{options.TagPrefix}{tag}");
+			if(this.Tag != null)
+			{
+				var tag = $"{this.Tag.Handle}{options.TagDelimiter}{this.Tag.Suffix}";
+				parts.Add($"{options.TagPrefix}{tag}");
+			}
 
-			//	var anchor = this.GetAnchor();
-			//	if(!string.IsNullOrWhiteSpace(anchor))
-			//		parts.Add($"{options.AnchorPrefix}{anchor}");
+			if(this.Anchor != null)
+			{
+				var anchor = this.Anchor.Value;
+				parts.Add($"{options.AnchorPrefix}{anchor}");
+			}
 
-			//	var anchorAlias = this.GetAnchorAlias();
-			//	if(!string.IsNullOrWhiteSpace(anchorAlias))
-			//		parts.Add($"{options.AnchorAliasPrefix}{anchorAlias}");
+			if(this.AnchorAlias != null)
+			{
+				var anchorAlias = this.AnchorAlias.Value;
+				parts.Add($"{options.AnchorAliasPrefix}{anchorAlias}");
+			}
 
-			//	var value = this.GetValue(options.ValueQuotation);
-			//	if(!string.IsNullOrWhiteSpace(value))
-			//		parts.Add(value!);
-
-			//	var comment = this.GetComment();
-			//	if(comment != null)
-			//		parts.Add($"{options.CommentPrefix}{comment}");
+			if(this.Value != null)
+			{
+				var value = this.GetScalarText(options.ValueQuotation, this.Value);
+				parts.Add(value);
+			}
 
 			return parts;
+		}
+
+		protected internal virtual string SingleQuoted(string text)
+		{
+			return $"'{text}'";
 		}
 
 		#endregion

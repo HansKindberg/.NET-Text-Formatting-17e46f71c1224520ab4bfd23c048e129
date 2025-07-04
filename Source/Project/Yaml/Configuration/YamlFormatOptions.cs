@@ -51,6 +51,7 @@ namespace HansKindberg.Text.Formatting.Yaml.Configuration
 
 		public char Space { get; set; } = ' ';
 		public string StartOfDocument { get; set; } = "---";
+		public char TagDelimiter { get; set; } = ':';
 		public string TagDirectivePrefix { get; set; } = "%TAG";
 		public char TagPrefix { get; set; } = '!';
 		public bool TrimComments { get; set; } = true;
