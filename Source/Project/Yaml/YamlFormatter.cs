@@ -1,5 +1,6 @@
 using HansKindberg.Text.Formatting.Yaml.Configuration;
 using HansKindberg.Text.Formatting.Yaml.Models;
+using HansKindberg.Text.Formatting.Yaml.Models.Comparison;
 using HansKindberg.Text.Formatting.Yaml.Serialization;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -36,15 +37,25 @@ namespace HansKindberg.Text.Formatting.Yaml
 			await stream.ApplyNamingConvention(namingConvention);
 		}
 
-		//////////////////protected internal virtual async Task<IComparer<IYamlNode>> CreateYamlNodeComparer(YamlFormatOptions options)
-		//////////////////{
-		//////////////////	if(options == null)
-		//////////////////		throw new ArgumentNullException(nameof(options));
+		protected internal virtual async Task<IComparer<IYamlDocument>> CreateYamlDocumentComparer(YamlFormatOptions options)
+		{
+			if(options == null)
+				throw new ArgumentNullException(nameof(options));
 
-		//////////////////	await Task.CompletedTask;
+			await Task.CompletedTask;
 
-		//////////////////	return new YamlNodeComparer(options);
-		//////////////////}
+			return new YamlDocumentComparer(options);
+		}
+
+		protected internal virtual async Task<IComparer<IYamlNode>> CreateYamlNodeComparer(YamlFormatOptions options)
+		{
+			if(options == null)
+				throw new ArgumentNullException(nameof(options));
+
+			await Task.CompletedTask;
+
+			return new YamlNodeComparer(options);
+		}
 
 		public virtual async Task<string> Format(YamlFormatOptions options, string text)
 		{
@@ -114,9 +125,10 @@ namespace HansKindberg.Text.Formatting.Yaml
 
 			await Task.CompletedTask;
 
-			//////////var comparer = await this.CreateYamlNodeComparer(options);
+			var documentComparer = await this.CreateYamlDocumentComparer(options);
+			var nodeComparer = await this.CreateYamlNodeComparer(options);
 
-			//////////await stream.Sort(comparer);
+			await stream.Sort(documentComparer, nodeComparer);
 		}
 
 		#endregion

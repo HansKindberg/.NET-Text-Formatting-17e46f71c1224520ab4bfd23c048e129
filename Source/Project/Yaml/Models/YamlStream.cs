@@ -1,3 +1,4 @@
+using HansKindberg.Text.Formatting.Collections.Generic.Extensions;
 using HansKindberg.Text.Formatting.Yaml.Configuration;
 using YamlDotNet.Core.Tokens;
 using YamlDotNet.Serialization;
@@ -138,15 +139,20 @@ namespace HansKindberg.Text.Formatting.Yaml.Models
 				document.IncludeStartOnWrite = true;
 		}
 
-		public virtual async Task Sort(IComparer<IYamlNode> comparer)
+		public virtual async Task Sort(IComparer<IYamlDocument> documentComparer, IComparer<IYamlNode> nodeComparer)
 		{
+			if(documentComparer == null)
+				throw new ArgumentNullException(nameof(documentComparer));
+
+			if(nodeComparer == null)
+				throw new ArgumentNullException(nameof(nodeComparer));
+
 			foreach(var document in this.Documents)
 			{
-				await document.Sort(comparer);
+				await document.Sort(nodeComparer);
 			}
 
-			throw new NotImplementedException();
-			//this.Documents.Sort(comparer);
+			this.Documents.Sort(documentComparer);
 		}
 
 		public virtual async Task Write(IList<string> lines, YamlFormatOptions options)

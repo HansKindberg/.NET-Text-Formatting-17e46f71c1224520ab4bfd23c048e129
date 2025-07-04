@@ -1,0 +1,5 @@
+[ # Comment 01
+    { a: b }, # Comment 02
+    { c: d }, # Comment 03
+    { e: f } # Comment 04
+]

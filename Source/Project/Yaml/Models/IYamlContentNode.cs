@@ -8,7 +8,6 @@ namespace HansKindberg.Text.Formatting.Yaml.Models
 
 		Anchor? Anchor { get; set; }
 		AnchorAlias? AnchorAlias { get; set; }
-		Comment? Comment { get; set; }
 		Scalar? Key { get; set; }
 		Tag? Tag { get; set; }
 		Scalar? Value { get; set; }

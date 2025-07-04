@@ -18,6 +18,7 @@ namespace HansKindberg.Text.Formatting.Yaml.Configuration
 		public AlphabeticalSortingOptions DocumentSorting { get; set; } = new() { Enabled = false };
 
 		public string EndOfDocument { get; set; } = "...";
+		public string ErrorPrefix { get; set; } = "ERROR: ";
 
 		public IndentationOptions Indentation { get; set; } = new()
 		{
@@ -41,6 +42,8 @@ namespace HansKindberg.Text.Formatting.Yaml.Configuration
 		/// </summary>
 		public AlphabeticalSortingOptions ScalarSorting { get; set; } = new();
 
+		public char SequenceCharacter { get; set; } = '-';
+
 		/// <summary>
 		/// Sequence sorting.
 		/// </summary>
@@ -50,6 +53,7 @@ namespace HansKindberg.Text.Formatting.Yaml.Configuration
 		public string StartOfDocument { get; set; } = "---";
 		public string TagDirectivePrefix { get; set; } = "%TAG";
 		public char TagPrefix { get; set; } = '!';
+		public bool TrimComments { get; set; } = true;
 		public Quotation? ValueQuotation { get; set; }
 		public string VersionDirectivePrefix { get; set; } = "%YAML";
 

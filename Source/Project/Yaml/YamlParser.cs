@@ -351,11 +351,17 @@ namespace HansKindberg.Text.Formatting.Yaml
 			return new Scanner(textReader, false);
 		}
 
-		protected internal virtual async Task<IYamlNode> CreateSequenceItemNode()
+		protected internal virtual async Task<IYamlNode> CreateSequenceItemNode(Comment? comment)
 		{
 			await Task.CompletedTask;
 
-			return new YamlSequenceItemNode();
+			if(comment is { IsInline: false })
+				throw new ArgumentException("The comment must be inline.", nameof(comment));
+
+			return new YamlSequenceItemNode
+			{
+				Comment = comment
+			};
 		}
 
 		protected internal virtual async Task<IYamlStream> CreateStream(IList<Token> tokens)
@@ -624,8 +630,15 @@ namespace HansKindberg.Text.Formatting.Yaml
 						break;
 					}
 					case BlockEntry:
+					case FlowEntry:
 					{
-						node = await this.CreateSequenceItemNode();
+						this.TryConsumeInlineComment(tokens, out var comment);
+
+						node = await this.CreateSequenceItemNode(comment);
+
+						if(token is FlowEntry)
+							node.Flow = true;
+
 						await parent.Add(node);
 						parent = node;
 
@@ -671,15 +684,6 @@ namespace HansKindberg.Text.Formatting.Yaml
 						node = await this.CreateErrorNode(error);
 
 						await parent.Add(node);
-
-						break;
-					}
-					case FlowEntry:
-					{
-						node = await this.CreateSequenceItemNode();
-						node.Flow = true;
-						await parent.Add(node);
-						parent = node;
 
 						break;
 					}

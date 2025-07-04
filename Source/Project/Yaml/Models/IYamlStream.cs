@@ -11,5 +11,11 @@ namespace HansKindberg.Text.Formatting.Yaml.Models
 		Token Start { get; }
 
 		#endregion
+
+		#region Methods
+
+		Task Sort(IComparer<IYamlDocument> documentComparer, IComparer<IYamlNode> nodeComparer);
+
+		#endregion
 	}
 }

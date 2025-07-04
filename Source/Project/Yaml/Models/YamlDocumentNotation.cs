@@ -5,7 +5,7 @@ using YamlDotNet.Core.Tokens;
 namespace HansKindberg.Text.Formatting.Yaml.Models
 {
 	/// <inheritdoc cref="IYamlDocumentNotation" />
-	public abstract class YamlDocumentNotation : IYamlDocumentNotation
+	public abstract class YamlDocumentNotation : YamlComponent, IYamlDocumentNotation
 	{
 		#region Constructors
 
@@ -34,7 +34,6 @@ namespace HansKindberg.Text.Formatting.Yaml.Models
 
 		#region Properties
 
-		public virtual Comment? Comment { get; set; }
 		public virtual Mark End { get; }
 		public virtual bool Explicit { get; }
 		public virtual Mark Start { get; }
@@ -45,6 +44,17 @@ namespace HansKindberg.Text.Formatting.Yaml.Models
 		#region Methods
 
 		protected internal abstract string GetNotation(YamlFormatOptions options);
+
+		protected internal override IList<string> GetTextPartsExceptComment(YamlFormatOptions options)
+		{
+			if(options == null)
+				throw new ArgumentNullException(nameof(options));
+
+			return
+			[
+				this.GetNotation(options)
+			];
+		}
 
 		#endregion
 	}
