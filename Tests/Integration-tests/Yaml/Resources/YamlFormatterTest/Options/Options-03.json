@@ -8,7 +8,7 @@
 	"IndentationSize": 2,
 	"NamingConvention": "Underscored",
 	"NewLine": "\r\n",
-	"ScalarSorting": {
+	"NodeSorting": {
 		"Comparison": "OrdinalIgnoreCase",
 		"Direction": "Ascending",
 		"Enabled": true

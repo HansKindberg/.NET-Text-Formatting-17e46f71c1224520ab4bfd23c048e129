@@ -120,7 +120,7 @@ namespace HansKindberg.Text.Formatting.Yaml
 			if(stream == null)
 				throw new ArgumentNullException(nameof(stream));
 
-			if(!options.DocumentSorting.Enabled && !options.ScalarSorting.Enabled && !options.SequenceSorting.Enabled)
+			if(!options.DocumentSorting.Enabled && !options.NodeSorting.Enabled && !options.SequenceSorting.Enabled)
 				return;
 
 			await Task.CompletedTask;

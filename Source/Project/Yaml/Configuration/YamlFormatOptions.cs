@@ -38,9 +38,9 @@ namespace HansKindberg.Text.Formatting.Yaml.Configuration
 		public string NewLine { get; set; } = Environment.NewLine;
 
 		/// <summary>
-		/// Scalar sorting.
+		/// Sorting for ordinary nodes, not sequences.
 		/// </summary>
-		public AlphabeticalSortingOptions ScalarSorting { get; set; } = new();
+		public AlphabeticalSortingOptions NodeSorting { get; set; } = new();
 
 		public char SequenceCharacter { get; set; } = '-';
 

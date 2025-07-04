@@ -21,9 +21,7 @@ namespace HansKindberg.Text.Formatting.Yaml.Models.Comparison
 				throw new ArgumentNullException(nameof(y));
 
 			if(this.Options.DocumentSorting.Enabled)
-			{
-				//this.Options.DocumentSorting.
-			}
+				throw new NotSupportedException("Document sorting is enabled but we haven't figured it out yet how to sort.");
 
 			return x.Index.CompareTo(y.Index);
 		}

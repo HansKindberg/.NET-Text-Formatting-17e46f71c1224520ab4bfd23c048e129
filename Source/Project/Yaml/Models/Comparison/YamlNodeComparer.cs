@@ -28,19 +28,15 @@ namespace HansKindberg.Text.Formatting.Yaml.Models.Comparison
 			if(x.Parent != y.Parent)
 				throw new InvalidOperationException("The nodes must have the same parent.");
 
-			////var sequence = x.Parent is IYamlSequenceNode { Sequence: true };
+			if(x.GetType() != y.GetType())
+				throw new InvalidOperationException("The nodes must be of the same type.");
 
-			////if(sequence)
-			////{
-			////	if(this.Options.SequenceSorting.Enabled)
-			////		return this.Compare(x, y, this.Options, this.Options.SequenceSorting);
+			var compare = x is IYamlSequenceItemNode ? this.CompareSequences(x, y) : this.CompareNodes(x, y);
 
-			////	return 0;
-			////}
+			if(compare != 0)
+				return compare;
 
-			//if(this.Options.ScalarSorting.Enabled)
-			//	return this.Compare(x, y, this.Options, this.Options.ScalarSorting);
-
+			// We use stable sorting if the nodes are considered equal.
 			return x.Index.CompareTo(y.Index);
 		}
 
@@ -50,30 +46,31 @@ namespace HansKindberg.Text.Formatting.Yaml.Models.Comparison
 				throw new ArgumentNullException(nameof(options));
 
 			if(!options.Enabled)
-				return 0;
+				throw new ArgumentException("Sorting not enabled.", nameof(options));
 
-			var comparison = string.Compare(x, y, options.Comparison);
-
-			if(comparison == 0)
-				return 0;
-
-			if(options.Direction == ListSortDirection.Ascending)
-				return comparison;
-
-			return -comparison;
+			return options.Direction == ListSortDirection.Descending ? string.Compare(y, x, options.Comparison) : string.Compare(x, y, options.Comparison);
 		}
 
-		protected internal virtual int Compare(IYamlNode x, IYamlNode y, YamlFormatOptions options, AlphabeticalSortingOptions sortingOptions)
+		protected internal virtual int CompareNodes(IYamlNode x, IYamlNode y)
 		{
-			return 0;
+			if(!this.Options.NodeSorting.Enabled)
+				return 0;
 
-			//////////////////////////////////////////if(x is not IYamlDocumentNode)
-			//////////////////////////////////////////	return this.Compare(x.ToString(options), y.ToString(options), sortingOptions);
+			return this.Compare(x.ToString(this.Options), y.ToString(this.Options), this.Options.NodeSorting);
+		}
 
-			//////////////////////////////////////////var first = x.Children.FirstOrDefault()?.ToString(options) ?? string.Empty;
-			//////////////////////////////////////////var second = y.Children.FirstOrDefault()?.ToString(options) ?? string.Empty;
+		protected internal virtual int CompareSequences(IYamlNode x, IYamlNode y)
+		{
+			if(!this.Options.SequenceSorting.Enabled)
+				return 0;
 
-			//////////////////////////////////////////return this.Compare(first, second, sortingOptions);
+			var firstChild = x.Children.FirstOrDefault();
+			var secondChild = y.Children.FirstOrDefault();
+
+			if(firstChild == null || secondChild == null)
+				return 0;
+
+			return this.Compare(firstChild.ToString(this.Options), secondChild.ToString(this.Options), this.Options.SequenceSorting);
 		}
 
 		#endregion
