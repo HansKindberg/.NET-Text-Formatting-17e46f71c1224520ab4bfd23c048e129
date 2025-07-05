@@ -3,6 +3,7 @@ using HansKindberg.Text.Formatting.Yaml.Models;
 using HansKindberg.Text.Formatting.Yaml.Models.Extensions;
 using Shared.Extensions;
 using YamlDotNet.Core;
+using YamlDotNet.Core.Tokens;
 
 namespace IntegrationTests.Yaml
 {
@@ -232,6 +233,24 @@ namespace IntegrationTests.Yaml
 		}
 
 		[Theory]
+		[InlineData("BlockSequence-01", 1, 8)]
+		[InlineData("BlockSequence-02", 1, 9)]
+		[InlineData("BlockSequence-03", 1, 9)]
+		[InlineData("BlockSequence-04", 1, 9)]
+		[InlineData("BlockSequence-05", 1, 9)]
+		[InlineData("BlockSequence-06", 1, 9)]
+		public async Task Parse_BlockSequence_ShouldWorkProperly(string fileName, int expectedNumberOfLevelZeroNodes, int expectedNumberOfDescendants)
+		{
+			var value = await GetYaml(fileName);
+
+			var parser = await CreateYamlParser();
+
+			var stream = await parser.Parse(value);
+			Assert.Equal(expectedNumberOfLevelZeroNodes, stream.Documents[0].Nodes.Count());
+			Assert.Equal(expectedNumberOfDescendants, stream.Descendants().Count());
+		}
+
+		[Theory]
 		[InlineData("Comments-01", "0,0,1")]
 		[InlineData("Comments-02", "0,0,14")]
 		[InlineData("Comments-03", "0,0,1")]
@@ -432,6 +451,25 @@ namespace IntegrationTests.Yaml
 			Assert.Equal("c", secondNode.Key.Value);
 			Assert.Null(secondNode.Tag);
 			Assert.Null(secondNode.Value);
+		}
+
+		[Theory]
+		[InlineData("BlockSequence-01", 24, 1, 3)]
+		[InlineData("BlockSequence-02", 27, 0, 3)]
+		[InlineData("BlockSequence-03", 24, 1, 3)]
+		[InlineData("BlockSequence-04", 27, 0, 3)]
+		[InlineData("BlockSequence-05", 24, 1, 3)]
+		[InlineData("BlockSequence-06", 27, 0, 3)]
+		public async Task ParseToTokens_BlockSequence_ShouldWorkProperly(string fileName, int expectedNumberOfTokens, int expectedNumberOfBlockSequenceStart, int expectedNumberOfBlockEntry)
+		{
+			var value = await GetYaml(fileName);
+
+			var parser = await CreateYamlParser();
+			var tokens = await parser.ParseToTokens(value);
+
+			Assert.Equal(expectedNumberOfTokens, tokens.Count);
+			Assert.Equal(expectedNumberOfBlockSequenceStart, tokens.Count(token => token is BlockSequenceStart));
+			Assert.Equal(expectedNumberOfBlockEntry, tokens.Count(token => token is BlockEntry));
 		}
 
 		[Theory]
