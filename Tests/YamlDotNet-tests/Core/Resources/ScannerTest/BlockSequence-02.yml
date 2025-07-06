@@ -1,6 +1,4 @@
-a:
+key:
 - item-1
-- item-2:
-      aa: bb
-      cc: dd
+- item-2
 - item-3
