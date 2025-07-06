@@ -27,24 +27,43 @@ namespace YamlDotNetTests.Core
 		}
 
 		[Theory]
-		[InlineData("BlockSequence-01", 1, 0, 1, 3)]
-		[InlineData("BlockSequence-02", 0, 1, 1, 3)]
-		[InlineData("BlockSequence-03", 1, 0, 1, 3)]
-		[InlineData("BlockSequence-04", 1, 1, 2, 3)]
-		[InlineData("BlockSequence-05", 1, 2, 3, 3)]
-		[InlineData("BlockSequence-06", 1, 3, 4, 3)]
-		[InlineData("BlockSequence-07", 1, 2, 3, 3)]
-		[InlineData("BlockSequence-08", 0, 3, 3, 3)]
-		public async Task BlockSequence_Test(string fileName, int expectedNumberOfBlockSequenceStart, int expectedNumberOfBlockMappingStart, int expectedNumberOfBlockEnd, int expectedNumberOfBlockEntry)
+		[InlineData("BlockSequence-01", 10, 1, 0, 1, 3, 0, 0)]
+		[InlineData("BlockSequence-02", 13, 0, 1, 1, 3, 0, 0)]
+		[InlineData("BlockSequence-03", 10, 1, 0, 1, 3, 0, 0)]
+		[InlineData("BlockSequence-04", 15, 1, 1, 2, 3, 0, 0)]
+		[InlineData("BlockSequence-05", 24, 1, 2, 3, 3, 0, 0)]
+		[InlineData("BlockSequence-06", 29, 1, 3, 4, 3, 0, 0)]
+		[InlineData("BlockSequence-07", 24, 1, 2, 3, 3, 0, 0)]
+		[InlineData("BlockSequence-08", 27, 0, 3, 3, 3, 0, 0)]
+		[InlineData("BlockSequence-09", 10, 1, 0, 1, 3, 0, 0)]
+		[InlineData("BlockSequence-10", 13, 0, 1, 1, 3, 0, 0)]
+		[InlineData("BlockSequence-11", 10, 1, 0, 1, 3, 0, 0)]
+		[InlineData("BlockSequence-12", 15, 1, 1, 2, 3, 0, 0)]
+		[InlineData("BlockSequence-13", 24, 1, 2, 3, 3, 0, 0)]
+		[InlineData("BlockSequence-14", 29, 1, 3, 4, 3, 0, 0)]
+		[InlineData("BlockSequence-15", 24, 1, 2, 3, 3, 0, 0)]
+		[InlineData("BlockSequence-16", 27, 0, 3, 3, 3, 0, 0)]
+		[InlineData("BlockSequence-17", 12, 1, 0, 1, 3, 2, 1)]
+		[InlineData("BlockSequence-18", 15, 0, 1, 1, 3, 2, 1)]
+		[InlineData("BlockSequence-19", 12, 1, 0, 1, 3, 2, 1)]
+		[InlineData("BlockSequence-20", 17, 1, 1, 2, 3, 2, 1)]
+		[InlineData("BlockSequence-21", 26, 1, 2, 3, 3, 2, 1)]
+		[InlineData("BlockSequence-22", 31, 1, 3, 4, 3, 2, 2)]
+		[InlineData("BlockSequence-23", 26, 1, 2, 3, 3, 2, 2)]
+		[InlineData("BlockSequence-24", 29, 0, 3, 3, 3, 2, 1)]
+		public async Task BlockSequence_Test(string fileName, int expectedNumberOfTokens, int expectedNumberOfBlockSequenceStart, int expectedNumberOfBlockMappingStart, int expectedNumberOfBlockEnd, int expectedNumberOfBlockEntry, int expectedNumberOfComments, int expectedNumberOfInlineComments)
 		{
 			await Task.CompletedTask;
 
 			var tokens = await GetTokens(fileName);
 
+			Assert.Equal(expectedNumberOfTokens, tokens.Count);
 			Assert.Equal(expectedNumberOfBlockSequenceStart, tokens.Count(token => token is BlockSequenceStart));
 			Assert.Equal(expectedNumberOfBlockMappingStart, tokens.Count(token => token is BlockMappingStart));
 			Assert.Equal(expectedNumberOfBlockEnd, tokens.Count(token => token is BlockEnd));
 			Assert.Equal(expectedNumberOfBlockEntry, tokens.Count(token => token is BlockEntry));
+			Assert.Equal(expectedNumberOfComments, tokens.Count(token => token is Comment));
+			Assert.Equal(expectedNumberOfInlineComments, tokens.Count(token => token is Comment { IsInline: true }));
 		}
 
 		[Theory]
