@@ -1,0 +1,50 @@
+key-1: # Inline comment 01
+- item-1
+- item-2:
+      key-1: value-1
+      # Comment 01
+      key-2: # Inline comment 02
+      # Comment 02
+      - item-1
+      - item-2:
+            key-1: # Inline comment 03
+                        - item-1
+                        - item-2:
+                              key-1: value-1
+                              key-2: value-2
+                        # Comment 03
+                        - item-3 # Inline comment 04
+            key-2: value-1
+            key-3: value-2
+      - item-3 # Inline comment 05
+      key-3: value-3
+- item-3 # Inline comment 06
+key-2: # Inline comment 07
+-
+  item-1
+-
+  item-2:
+      key-1: value-1
+      key-2: # Inline comment 08
+        # Comment 04
+        -
+          item-1
+        # Comment 05
+        -
+          item-2:
+              key-1: # Inline comment 09
+              -
+                item-1
+              -
+                item-2:
+                    key-1: value-1
+                    key-2: value-2
+              -
+                item-3 # Inline comment 10
+              key-2: value-1
+              key-3: value-2
+        -
+          item-3 # Inline comment 11
+      key-3: value-3
+-
+  item-3 # Inline comment 12
